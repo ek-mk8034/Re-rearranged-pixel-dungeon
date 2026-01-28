@@ -62,6 +62,7 @@ public class Assets {
 		public static final String PRISON_EXIT      = "environment/custom_tiles/prison_exit.png";
 		public static final String CAVES_QUEST      = "environment/custom_tiles/caves_quest.png";
 		public static final String CAVES_BOSS       = "environment/custom_tiles/caves_boss.png";
+		public static final String CITY_QUEST        = "environment/custom_tiles/city_quest.png";
 		public static final String CITY_BOSS        = "environment/custom_tiles/city_boss.png";
 		public static final String HALLS_SP         = "environment/custom_tiles/halls_special.png";
 		public static final String TEMPLE_SP        = "environment/custom_tiles/temple_special.png";
@@ -79,8 +80,15 @@ public class Assets {
 		public static final String BANNERS  = "interfaces/banners.png";
 		public static final String BADGES   = "interfaces/badges.png";
 		public static final String LOCKED   = "interfaces/locked_badge.png";
+
+		public static final String CHROME   = "interfaces/chrome.png";
 		public static final String ICONS    = "interfaces/icons.png";
+		public static final String STATUS   = "interfaces/status_pane.png";
+		public static final String MENU     = "interfaces/menu_pane.png";
+		public static final String MENU_BTN = "interfaces/menu_button.png";
 		public static final String SHADOW   = "interfaces/shadow.png";
+		public static final String TOOLBAR  = "interfaces/toolbar.png";
+		public static final String BOSSHP   = "interfaces/boss_hp.png";
 
 		public static final String SURFACE  = "interfaces/surface.png";
 
@@ -88,96 +96,11 @@ public class Assets {
 		public static final String BUFFS_LARGE      = "interfaces/large_buffs.png";
 
 		public static final String TALENT_ICONS     = "interfaces/talent_icons.png";
+		public static final String TALENT_BUTTON    = "interfaces/talent_button.png";
 
 		public static final String HERO_ICONS       = "interfaces/hero_icons.png";
 
 		public static final String RADIAL_MENU      = "interfaces/radial_menu.png";
-
-		//alternative UIs
-		public static String CHROME   = "interfaces/chrome.png";
-		public static String TOOLBAR  = "interfaces/toolbar.png";
-		public static String STATUS   = "interfaces/status_pane.png";
-		public static String MENU     = "interfaces/menu_pane.png";
-		public static String MENU_BTN = "interfaces/menu_button.png";
-		public static String BOSSHP   = "interfaces/boss_hp.png";
-		public static String TALENT_BUTTON    = "interfaces/talent_button.png";
-
-		public static String getChrome() {
-			switch (SPDSettings.uiType()) {
-				case 0: default:
-					return CHROME;
-				case 1: //shattered pd ui
-					return "interfaces/alternative/shattered/chrome.png";
-				case 2: //blue archive pd ui
-					return "interfaces/alternative/bluearchive/chrome.png";
-			}
-		}
-
-		public static String getToolBar() {
-			switch (SPDSettings.uiType()) {
-				case 0: default:
-					return TOOLBAR;
-				case 1: //shattered pd ui
-					return "interfaces/alternative/shattered/toolbar.png";
-				case 2: //blue archive pd ui
-					return "interfaces/alternative/bluearchive/toolbar.png";
-			}
-		}
-
-		public static String getStatus() {
-			switch (SPDSettings.uiType()) {
-				case 0: default:
-					return STATUS;
-				case 1: //shattered pd ui
-					return "interfaces/alternative/shattered/status_pane.png";
-				case 2: //blue archive pd ui
-					return "interfaces/alternative/bluearchive/status_pane.png";
-			}
-		}
-
-		public static String getMenu() {
-			switch (SPDSettings.uiType()) {
-				case 0: default:
-					return MENU;
-				case 1: //shattered pd ui
-					return "interfaces/alternative/shattered/menu_pane.png";
-				case 2: //blue archive pd ui
-					return "interfaces/alternative/bluearchive/menu_pane.png";
-			}
-		}
-
-		public static String getMenuBtn() {
-			switch (SPDSettings.uiType()) {
-				case 0: default:
-					return MENU_BTN;
-				case 1: //shattered pd ui
-					return "interfaces/alternative/shattered/menu_button.png";
-				case 2: //blue archive pd ui
-					return "interfaces/alternative/bluearchive/menu_button.png";
-			}
-		}
-
-		public static String getBossHP() {
-			switch (SPDSettings.uiType()) {
-				case 0: default:
-					return BOSSHP;
-				case 1: //shattered pd ui
-					return "interfaces/alternative/shattered/boss_hp.png";
-				case 2: //blue archive pd ui
-					return "interfaces/alternative/bluearchive/boss_hp.png";
-			}
-		}
-
-		public static String getTalentBtn() {
-			switch (SPDSettings.uiType()) {
-				case 0: default:
-					return TALENT_BUTTON;
-				case 1: //shattered pd ui
-					return "interfaces/alternative/shattered/talent_button.png";
-				case 2: //blue archive pd ui
-					return "interfaces/alternative/bluearchive/talent_button.png";
-			}
-		}
 	}
 
 	//these points to resource bundles, not raw asset files

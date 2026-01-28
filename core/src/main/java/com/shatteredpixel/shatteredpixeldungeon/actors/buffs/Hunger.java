@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SaltCube;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
+import com.shatteredpixel.shatteredpixeldungeon.levels.VaultLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -68,7 +69,8 @@ public class Hunger extends Buff implements Hero.Doom {
 				|| target.buff(WellFed.class) != null
 				|| SPDSettings.intro()
 				|| target.buff(ScrollOfChallenge.ChallengeArena.class) != null
-				|| (Dungeon.hero.pointsInTalent(Talent.STEALTH_MASTER) > 2 && Dungeon.hero.buff(Cloaking.class) != null)){
+				|| (Dungeon.hero.pointsInTalent(Talent.STEALTH_MASTER) > 2 && Dungeon.hero.buff(Cloaking.class) != null))
+				|| Dungeon.level instanceof VaultLevel){
 			spend(TICK);
 			return true;
 		}

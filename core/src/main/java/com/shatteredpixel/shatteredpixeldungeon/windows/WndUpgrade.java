@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Crossbow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatshield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
@@ -41,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.bow.BowWeapon
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.gun.Gun;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.alchemy.PotOThunder;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Tomahawk;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -204,6 +206,21 @@ public class WndUpgrade extends Window {
 			bottom = fillFields(Messages.get(this, "damage"),
 					aug.damageFactor(((Weapon) toUpgrade).min(levelFrom)) + "-" + aug.damageFactor(((Weapon) toUpgrade).max(levelFrom)),
 					aug.damageFactor(((Weapon) toUpgrade).min(levelTo)) + "-" + aug.damageFactor(((Weapon) toUpgrade).max(levelTo)),
+					bottom);
+		}
+
+		if (toUpgrade instanceof Crossbow){
+			bottom = fillFields(Messages.get(this, "dart_damage"),
+					((Crossbow) toUpgrade).dartMin(levelFrom) + "-" + ((Crossbow) toUpgrade).dartMax(levelFrom),
+					((Crossbow) toUpgrade).dartMin(levelTo) + "-" + ((Crossbow) toUpgrade).dartMax(levelTo),
+					bottom);
+		}
+
+		//bleeding (tomahawk)
+		if (toUpgrade instanceof Tomahawk){
+			bottom = fillFields(Messages.get(this, "bleeding"),
+					Math.round(((Tomahawk) toUpgrade).minBleed(levelFrom)) + "-" + Math.round(((Tomahawk) toUpgrade).maxBleed(levelFrom)),
+					Math.round(((Tomahawk) toUpgrade).minBleed(levelTo)) + "-" + Math.round(((Tomahawk) toUpgrade).maxBleed(levelTo)),
 					bottom);
 		}
 

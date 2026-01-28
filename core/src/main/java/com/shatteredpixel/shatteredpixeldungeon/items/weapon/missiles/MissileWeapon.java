@@ -257,7 +257,7 @@ abstract public class MissileWeapon extends Weapon {
 	protected float adjacentAccFactor(Char owner, Char target){
 		if (Dungeon.level.adjacent( owner.pos, target.pos )) {
 			if (owner instanceof Hero){
-				return (0.5f + 0.2f*((Hero) owner).pointsInTalent(Talent.POINT_BLANK));
+				return (0.5f + 0.25f*((Hero) owner).pointsInTalent(Talent.POINT_BLANK));
 			} else {
 				return 0.5f;
 			}
@@ -483,9 +483,9 @@ abstract public class MissileWeapon extends Weapon {
 	public float durabilityPerUse( int level ){
 		float usages = baseUses * (float)(Math.pow(1.5f, level));
 
-		//+33%/50% durability
+		//+50%/75% durability
 		if (Dungeon.hero != null && Dungeon.hero.hasTalent(Talent.DURABLE_PROJECTILES)){
-			usages *= 1f + (1+Dungeon.hero.pointsInTalent(Talent.DURABLE_PROJECTILES))/6f;
+			usages *= 1.25f + (0.25f*Dungeon.hero.pointsInTalent(Talent.DURABLE_PROJECTILES));
 		}
 		if (holster) {
 			usages *= MagicalHolster.HOLSTER_DURABILITY_FACTOR;
@@ -547,7 +547,7 @@ abstract public class MissileWeapon extends Weapon {
 				damage += Hero.heroDamageIntRange( 0, exStr );
 			}
 			if (owner.buff(Momentum.class) != null && owner.buff(Momentum.class).freerunning()) {
-				damage = Math.round(damage * (1f + 0.1f * ((Hero) owner).pointsInTalent(Talent.PROJECTILE_MOMENTUM)));
+				damage = Math.round(damage * (1f + 0.15f * ((Hero) owner).pointsInTalent(Talent.PROJECTILE_MOMENTUM)));
 			}
 		}
 		
@@ -693,7 +693,7 @@ abstract public class MissileWeapon extends Weapon {
 		}
 
 		info += "\n\n";
-		String statsInfo = Messages.get(this, "stats_desc");
+		String statsInfo = statsInfo();
 		if (!statsInfo.equals("")) info += statsInfo + " ";
 		info += Messages.get(MissileWeapon.class, "distance");
 
@@ -728,6 +728,10 @@ abstract public class MissileWeapon extends Weapon {
 		}
 
 		return info;
+	}
+
+	public String statsInfo(){
+		return Messages.get(this, "stats_desc");
 	}
 	
 	@Override
@@ -848,6 +852,10 @@ abstract public class MissileWeapon extends Weapon {
 
 	//also used by liquid metal crafting to track when a set is consumed
 	public static class UpgradedSetTracker extends Buff {
+
+		{
+			revivePersists = true;
+		}
 
 		public HashMap<Long, Integer> levelThresholds = new HashMap<>();
 
