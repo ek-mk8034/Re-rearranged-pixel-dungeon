@@ -24,3 +24,6 @@ local.properties
 
 #secret values
 android/src/main/res/values/strings.xml
+# macOS
+.DS_Store
+**/.DS_Store

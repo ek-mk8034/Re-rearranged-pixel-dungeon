@@ -143,6 +143,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Afterimage;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Obfuscation;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Stone;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.AlchemistsToolkit;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CapeOfThorns;
@@ -788,6 +789,11 @@ public class Hero extends Char {
 
 		if (belongings.armor() != null) {
 			evasion = belongings.armor().evasionFactor(this, evasion);
+
+			//stone specifically overrides to 0 always, guaranteed hit
+			if (belongings.armor().hasGlyph(Stone.class, this) && !Stone.testingEvasion()){
+				return 0;
+			}
 		}
 
 		if (belongings.getItem(KnightsShield.class) != null && belongings.getItem(KnightsShield.class).hasGlyph(Afterimage.class, this)) {

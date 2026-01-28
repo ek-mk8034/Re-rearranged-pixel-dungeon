@@ -2092,8 +2092,18 @@ public enum Talent {
 			identify = true;
 		}
 
-		if (identify && !ShardOfOblivion.passiveIDDisabled()){
-			item.identify();
+		if (identify) {
+			if (ShardOfOblivion.passiveIDDisabled()) {
+				if (item instanceof Weapon){
+					((Weapon) item).setIDReady();
+				} else if (item instanceof Armor){
+					((Armor) item).setIDReady();
+				} else if (item instanceof Ring){
+					((Ring) item).setIDReady();
+				}
+			} else {
+				item.identify();
+			}
 		}
 		if (hero.hasTalent(GUNNERS_INTUITION) && item instanceof Gun) {
 			item.identify();
