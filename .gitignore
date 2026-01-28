@@ -18,9 +18,5 @@ local.properties
 #intellij project files
 *.iml
 *.idea
-
-#error log files
-*.log
-
-#secret values
-android/src/main/res/values/strings.xml
+.DS_Store
+.DS_Store
