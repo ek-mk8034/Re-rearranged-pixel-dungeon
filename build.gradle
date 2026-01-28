@@ -11,18 +11,16 @@ buildscript {
 allprojects {
 
     ext {
-        appName = 'Rearranged Pixel Dungeon'
-        appPackageName = 'com.rearrangedpixel.rearrangedpixeldungon'
+        appName = 'Shattered Pixel Dungeon'
+        appPackageName = 'com.shatteredpixel.shatteredpixeldungeon'
 
-        appVersionCode = 859
-        appVersionName = '3.2.0'
-        appVersionCode += 62
-        appVersionName += '_based_3.40.0_FINAL'
+        appVersionCode = 861
+        appVersionName = '3.2.1'
 
         appJavaCompatibility = JavaVersion.VERSION_1_8
 
-        appAndroidCompileSDK = 34  //Android 14
-        appAndroidMinSDK = 21       //Android 5.0
+        appAndroidCompileSDK = 35   //Android 15
+        appAndroidMinSDK = 14       //Android 4.0
         //significant layout management changes required for API 35+ as edge-to-edge is forced on
         //will do this at the same time as dropping support for Android 4.4- (later in 2025)
         appAndroidTargetSDK = 34    //Android 14
@@ -38,4 +36,5 @@ allprojects {
         mavenCentral()
         maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
     }
+
 }
