@@ -78,13 +78,14 @@ public class EscapeCrystal extends Item {
 					if (b instanceof Wand.Charger
 							|| b instanceof Artifact.ArtifactBuff
 							|| b instanceof Ring.RingBuff
-							|| b instanceof MeleeWeapon.Charger
+							//not melee charger, Duelist should retain her charge count
 							|| b instanceof ClassArmor.Charger){
 						b.detach();
 					}
 				}
 
 				restoreHeroBelongings(hero);
+				hero.updateHT( false );
 
 				Level.beforeTransition();
 				InterlevelScene.curTransition = new LevelTransition(Dungeon.level,

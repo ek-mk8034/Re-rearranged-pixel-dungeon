@@ -415,6 +415,10 @@ public class InventoryPane extends Component {
 		updateInventory();
 	}
 
+	public WndBag.ItemSelector getSelector() {
+		return selector;
+	}
+
 	public boolean isSelecting(){
 		return selector != null;
 	}
