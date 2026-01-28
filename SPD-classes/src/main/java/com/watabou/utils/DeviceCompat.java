@@ -52,7 +52,9 @@ public class DeviceCompat {
 	}
 	
 	public static boolean isDebug(){
-		return Game.version.contains("INDEV");
+		String v = Game.version;
+		if (v == null) return true; // dev로 취급하거나 false로 취급 (선택)
+		return v.contains("INDEV");
 	}
 	
 	public static void log( String tag, String message ){

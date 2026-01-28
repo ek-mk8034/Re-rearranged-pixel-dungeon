@@ -116,15 +116,34 @@ public class DesktopLauncher {
 		});
 		
 		Game.version = DesktopLauncher.class.getPackage().getSpecificationVersion();
-		if (Game.version == null) {
-			Game.version = System.getProperty("Specification-Version");
+		if (Game.version == null || Game.version.isBlank()) {
+		    Game.version = System.getProperty("Specification-Version");
 		}
+		if (Game.version == null || Game.version.isBlank()) {
+		    Game.version = "dev";   // 또는 "0.0.0"
+		}
+
 		
-		try {
-			Game.versionCode = Integer.parseInt(DesktopLauncher.class.getPackage().getImplementationVersion());
-		} catch (NumberFormatException e) {
-			Game.versionCode = Integer.parseInt(System.getProperty("Implementation-Version"));
+		String implVer = DesktopLauncher.class
+       			.getPackage()
+       			.getImplementationVersion();
+
+		if (implVer == null) {
+		    implVer = System.getProperty("Implementation-Version");
 		}
+
+		try {
+		    Game.versionCode = Integer.parseInt(DesktopLauncher.class.getPackage().getImplementationVersion());
+		} catch (Exception e) {
+		    String v = System.getProperty("Implementation-Version");
+		    try {
+		        Game.versionCode = Integer.parseInt(v);
+		    } catch (Exception e2) {
+		        Game.versionCode = 0;
+		    }
+		}
+
+
 
 		if (UpdateImpl.supportsUpdates()){
 			Updates.service = UpdateImpl.getUpdateService();
@@ -141,10 +160,21 @@ public class DesktopLauncher {
 		// (e.g. /.shatteredpixel/shatteredpixeldungeon), but we have too much existing save
 		// date to worry about transferring at this point.
 		String vendor = DesktopLauncher.class.getPackage().getImplementationTitle();
-		if (vendor == null) {
-			vendor = System.getProperty("Implementation-Title");
+		if (vendor == null || vendor.isBlank()) {
+		    vendor = System.getProperty("Implementation-Title");
 		}
-		vendor = vendor.split("\\.")[1];
+		if (vendor == null || vendor.isBlank()) {
+		    vendor = "com.shatteredpixel"; // 기본값 (아무거나 OK지만 안정적으로)
+		}
+
+		// vendor.split("\\.")[1] 는 위험함. 안전하게 처리:
+		String[] parts = vendor.split("\\.");
+		if (parts.length >= 2) {
+		    vendor = parts[1];
+		} else {
+		    vendor = vendor; // or "shatteredpixel"
+		}
+
 
 		String basePath = "";
 		Files.FileType baseFileType = null;

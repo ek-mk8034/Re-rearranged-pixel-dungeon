@@ -323,7 +323,7 @@ public class TalentsPane extends ScrollPane {
 					left += btn.width() + gap;
 				}
 				height = buttons.get(0).bottom() - y; //각 등급 간의 세로 거리
-
+			}
 			if (random != null){
 				random.setRect(width - 16, y-2, 16, 14);
 			}

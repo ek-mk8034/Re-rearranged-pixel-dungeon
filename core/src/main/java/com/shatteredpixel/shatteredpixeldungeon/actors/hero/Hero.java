@@ -3055,6 +3055,7 @@ public class Hero extends Char {
 		}
 
 		return stealth;
+	}
 
 	protected synchronized void onRemove() {
 		//same as super, except we retain charger for rankings purposes

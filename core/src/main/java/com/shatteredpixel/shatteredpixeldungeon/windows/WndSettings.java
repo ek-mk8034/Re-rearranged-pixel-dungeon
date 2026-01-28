@@ -967,31 +967,6 @@ public class WndSettings extends WndTabbed {
 				add(chkWifi);
 			}
 
-			if (ShatteredPixelDungeon.useGooglePlayGmaes()) {
-				btnGooglePlayUpload = new RedButton(Messages.get(this, "google_play_upload")) {
-					@Override
-					protected void onClick() {
-						super.onClick();
-						if (ShatteredPixelDungeon.playServices != null) {
-							ShatteredPixelDungeon.playServices.launchGooglePlayGames(true);
-							ShatteredPixelDungeon.scene().addToFront( new WndMessage( Messages.get(DataTab.class, "google_upload_launched") ) );
-						}
-					}
-				};
-				add(btnGooglePlayUpload);
-
-				btnGooglePlayDownload = new RedButton(Messages.get(this, "google_play_download")) {
-					@Override
-					protected void onClick() {
-						super.onClick();
-						if (ShatteredPixelDungeon.playServices != null) {
-							ShatteredPixelDungeon.playServices.launchGooglePlayGames(false);
-							ShatteredPixelDungeon.scene().addToFront( new WndMessage( Messages.get(DataTab.class, "google_download_launched") ) );
-						}
-					}
-				};
-				add(btnGooglePlayDownload);
-			}
 		}
 
 		@Override

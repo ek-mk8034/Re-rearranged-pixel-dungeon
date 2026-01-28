@@ -52,7 +52,7 @@ public class BossHealthBar extends Component {
 	private Image skull;
 	private Emitter blood;
 
-	private static String asset = Assets.Interfaces.getBossHP();
+	private static final String asset = Assets.Interfaces.BOSSHP;
 
 	private static BossHealthBar instance;
 	private static boolean bleeding;

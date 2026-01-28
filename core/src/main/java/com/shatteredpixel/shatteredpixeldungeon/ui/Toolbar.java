@@ -719,7 +719,7 @@ public class Toolbar extends Component {
 		}
 
 		public void icon( int x, int y, int width, int height){
-			if (icon == null) icon = new Image( Assets.Interfaces.getToolBar() );
+			if (icon == null) icon = new Image( Assets.Interfaces.TOOLBAR );
 			add(icon);
 
 			icon.frame( x, y, width, height);
@@ -729,7 +729,7 @@ public class Toolbar extends Component {
 		protected void createChildren() {
 			super.createChildren();
 			
-			base = new Image( Assets.Interfaces.getToolBar() );
+			base = new Image( Assets.Interfaces.TOOLBAR );
 			add( base );
 		}
 		

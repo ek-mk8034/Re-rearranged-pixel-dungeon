@@ -69,7 +69,7 @@ public class Terrain {
 
 	public static final int WATER		    = 29;
 
-	public static final int WIRE			= 38;
+	public static final int WIRE			= 39;
 	
 	public static final int PASSABLE		= 0x01;
 	public static final int LOS_BLOCKING	= 0x02;

@@ -92,7 +92,7 @@ public class TalentButton extends Button {
 		}
 		add(fill);
 
-		bg = new Image(Assets.Interfaces.getTalentBtn());
+		bg = new Image(Assets.Interfaces.TALENT_BUTTON);
 		add(bg);
 	}
 
