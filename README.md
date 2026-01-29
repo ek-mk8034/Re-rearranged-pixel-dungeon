@@ -1,3 +1,9 @@
+# Re-ReARranged Pixel Dungeon
+**Re-ReARranged Pixel Dungeon** is the rework version of [ReARranged Pixel Dungeon](https://github.com/Hoto-Mocha/Re-ARranged-Pixel-Dungeon), which is extended version of [ARranged Pixel Dungeon](https://github.com/Hoto-Mocha/ARranged-Pixel-Dungeon) and is also extended version of [Shattered Pixel Dungeon](https://github.com/00-Evan/shattered-pixel-dungeon) by [Evan Debenham](https://github.com/00-Evan)  and has been made with its open source under the GPLv3 license.
+
+Development will be limited to iOS. The main purpose of this work is to update the SPD to the new version used by ReARranged Pixel Dungeon.
+
+---
 # ReARranged Pixel Dungeon
 **ReARranged Pixel Dungeon** is the reworked version of [ARranged Pixel Dungeon](https://github.com/Hoto-Mocha/ARranged-Pixel-Dungeon), which is basically an extended version of [Shattered Pixel Dungeon](https://github.com/00-Evan/shattered-pixel-dungeon) by [Evan Debenham](https://github.com/00-Evan)  and has been made with its open source under the GPLv3 license.
 
