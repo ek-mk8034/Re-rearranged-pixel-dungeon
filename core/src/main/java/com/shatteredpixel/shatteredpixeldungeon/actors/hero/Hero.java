@@ -260,6 +260,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.ClericTempleBlessing;
+
+
 public class Hero extends Char {
 
 	{
@@ -368,7 +371,14 @@ public class Hero extends Char {
 			strBonus += (int)Math.floor(STR * (0.03f + 0.05f*pointsInTalent(Talent.STRONGMAN)));
 		}
 
-		return STR + strBonus;
+		int result = STR + strBonus;
+
+		ClericTempleBlessing blessing = buff(ClericTempleBlessing.class);
+	    if (blessing != null){
+	        result = blessing.modifyStrength(result);
+	    }
+
+	    return result;
 	}
 
 	public void onSTRGained() {
@@ -2270,6 +2280,19 @@ public class Hero extends Char {
 			buff(Sheath.CertainCrit.class).hit();
 		}
 
+		// ===== Cleric Temple Blessing hook (final damage) =====
+		ClericTempleBlessing cb = buff(ClericTempleBlessing.class);
+		if (cb != null) {
+
+		    boolean ranged = false;
+		    if (wep != null) {
+		        boolean ranged = (wep instanceof DisposableMissileWeapon) || (wep instanceof MissileWeapon) || (wep instanceof Gun) || (wep instanceof BowWeapon);
+		    }
+
+		    damage = cb.modifyOutgoingDamage(this, damage, wep, ranged);
+		}
+		// =====================================================
+
 		return damage;
 	}
 	
@@ -2351,6 +2374,14 @@ public class Hero extends Char {
 		}
 
 		damage = Talent.onDefenseProc(this, enemy, damage);
+
+		// ===== Cleric Temple Blessing: Inquisitor incoming damage penalty =====
+		ClericTempleBlessing cb = buff(ClericTempleBlessing.class);
+		if (cb != null) {
+    		damage = cb.modifyIncomingDamage(this, damage);
+		}
+		// =========================================================================
+
 
 		if (buff(BrokenShield.DRBuff.class) != null) {
 			damage = 0;

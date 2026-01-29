@@ -59,8 +59,17 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.ClericTempleBlessing;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
+
+
 public class OldAmulet extends Item {
 
+    private static boolean isCleric(Hero hero) {
+        return hero != null && hero.heroClass == HeroClass.CLERIC;
+    }
+    
     public static final String AC_USE		= "USE";
 
     ArrayList<Integer> abilityList = new ArrayList<>();
@@ -84,13 +93,21 @@ public class OldAmulet extends Item {
     @Override
     public ArrayList<String> actions(Hero hero) {
         ArrayList<String> actions = super.actions(hero);
-        if (hero.buff(TempleCurse.class) != null) {
-            actions.remove(AC_USE);
+
+        // TempleCurse면 사용 불가
+        if (hero.buff(TempleCurse.class) != null) return actions;
+
+        // Cleric만 USE 보이게
+        if (isCleric(hero)) {
+            actions.add(AC_USE);
         } else {
+            // 다른 직업은 기존 변환 기능 유지하고 싶으면 actions.add(AC_USE) 유지
             actions.add(AC_USE);
         }
+
         return actions;
     }
+
 
     @Override
     public boolean doPickUp(Hero hero, int pos) {
@@ -121,13 +138,32 @@ public class OldAmulet extends Item {
         super.execute(hero, action);
 
         if (action.equals(AC_USE)) {
+
             if (hero.buff(TempleCurse.class) != null) {
                 GLog.w(Messages.get(this, "cannot_use"));
-            } else {
-                GameScene.selectItem( itemSelector );
+                return;
             }
+
+            // ===== Cleric 전용: 축복 지급 + OldAmulet 소모 =====
+            if (isCleric(hero)) {
+                ClericTempleBlessing b = ClericTempleBlessing.grantRandom(hero);
+
+                // 로그/플로팅텍스트 호출
+                GLog.p(Messages.get(ClericTempleBlessing.class, "gain", b.uiName()));
+                hero.sprite.showStatus(CharSprite.POSITIVE, b.uiName()); 
+
+                // 소비 아이템처럼 소모
+                detach(hero.belongings.backpack);
+
+                hero.spendAndNext(Actor.TICK); // 사용 턴 소비(원하면)
+                return;
+            }
+
+            // ===== 그 외 직업: 기존 로직 =====
+            GameScene.selectItem(itemSelector);
         }
     }
+
 
     private static final String ABILITY_LIST_0	= "abilityList_0";
     private static final String ABILITY_LIST_1	= "abilityList_1";

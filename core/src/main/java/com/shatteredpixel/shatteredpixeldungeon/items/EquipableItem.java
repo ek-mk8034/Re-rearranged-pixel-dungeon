@@ -36,6 +36,8 @@ import com.watabou.utils.Bundle;
 
 import java.util.ArrayList;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.ClericTempleBlessing;
+
 public abstract class EquipableItem extends Item {
 
 	public static final String AC_EQUIP		= "EQUIP";
@@ -123,12 +125,18 @@ public abstract class EquipableItem extends Item {
 
 	public boolean doUnequip( Hero hero, boolean collect, boolean single ) {
 
+		// Cleric: Corrupt Priest can unequip cursed weapons/armor freely
+		ClericTempleBlessing cb = hero.buff(ClericTempleBlessing.class);
+		boolean bypassCursed = cb != null && cb.bypassCursedEquipRestrictionsFor(this);
+
 		if (cursed
-				&& hero.buff(MagicImmune.class) == null
-				&& (!hero.belongings.lostInventory() || keptThroughLostInventory())) {
-			GLog.w(Messages.get(EquipableItem.class, "unequip_cursed"));
-			return false;
+		        && !bypassCursed
+		        && hero.buff(MagicImmune.class) == null
+		        && (!hero.belongings.lostInventory() || keptThroughLostInventory())) {
+		    GLog.w(Messages.get(EquipableItem.class, "unequip_cursed"));
+		    return false;
 		}
+
 
 		if (single) {
 			hero.spendAndNext( timeToEquip( hero ) );

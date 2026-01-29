@@ -52,6 +52,7 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.ClericTempleBlessing;
 
 public class Blandfruit extends Food {
 
@@ -108,6 +109,15 @@ public class Blandfruit extends Food {
 			GLog.w( Messages.get(this, "raw"));
 			return;
 
+		}
+
+		// ✅ 신성 고문관: 회복 과일(=PotionOfHealing) 섭취 금지
+		if (action.equals(AC_EAT) && potionAttrib instanceof PotionOfHealing) {
+    		ClericTempleBlessing b = hero.buff(ClericTempleBlessing.class);
+    		if (b != null && b.forbidsHealingPotion()) {
+    		    GLog.w(Messages.get(this, "forbidden_healing_fruit"));
+    		    return; // ✅ 여기서 끊으면 소비도 안 됨
+    		}
 		}
 
 		super.execute(hero, action);

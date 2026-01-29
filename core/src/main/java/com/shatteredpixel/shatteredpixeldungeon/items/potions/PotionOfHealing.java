@@ -41,6 +41,9 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.ClericTempleBlessing;
+
+
 public class PotionOfHealing extends Potion {
 
 	{
@@ -102,5 +105,20 @@ public class PotionOfHealing extends Potion {
 		if (!Dungeon.isChallenged(Challenges.NO_HEALING)){
 			hero.heal(Math.round(1+damage*0.4f));
 		}
+	}
+
+	@Override
+	public void execute(Hero hero, String action) {
+
+    	// AC_DRINK가 부모(Potion)에 정의돼있을 가능성이 높음
+    	// 만약 컴파일 에러 나면 action.equals("DRINK")로 바꿔도 됨.
+    	if (action.equals(AC_DRINK)) {
+    	    ClericTempleBlessing b = hero.buff(ClericTempleBlessing.class);
+    	    if (b != null && b.forbidsHealingPotion()) {
+    	        GLog.w(Messages.get(this, "forbidden"));
+    	        return; // ✅ 여기서 끊으면 포션 소비도 안 됨
+    	    }
+    	}
+    	super.execute(hero, action);
 	}
 }

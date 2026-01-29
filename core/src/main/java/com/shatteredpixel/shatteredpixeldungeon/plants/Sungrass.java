@@ -36,28 +36,61 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.utils.Bundle;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.ClericTempleBlessing;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+
 public class Sungrass extends Plant {
 	
 	{
 		image = 3;
 		seedClass = Seed.class;
 	}
-	
+
 	@Override
 	public void activate( Char ch ) {
-		
-		if (ch != null){
-			if (ch instanceof Hero && (((Hero) ch).subClass == HeroSubClass.WARDEN || ((Hero) ch).subClass == HeroSubClass.RESEARCHER)) {
-				Buff.affect(ch, Healing.class).setHeal(ch.HT, 0, 1);
-			} else {
-				Buff.affect(ch, Health.class).boost(ch.HT);
-			}
-		}
-		
-		if (Dungeon.level.heroFOV[pos]) {
-			CellEmitter.get( pos ).start( ShaftParticle.FACTORY, 0.2f, 3 );
-		}
+
+	    boolean blockHealing = false;
+
+    	// 신성 고문관이면 Sungrass 회복 효과를 못 받게
+    	if (ch instanceof Hero) {
+    	    Hero h = (Hero) ch;
+    	    ClericTempleBlessing b = h.buff(ClericTempleBlessing.class);
+    	    blockHealing = (b != null && b.forbidsHealingPotion());
+    	    
+        	if (blockHealing && h == Dungeon.hero) {
+            	GLog.w(Messages.get(Sungrass.class, "blocked"));
+	        }
+    	}
+
+    	if (ch != null && !blockHealing){
+    	    if (ch instanceof Hero && (((Hero) ch).subClass == HeroSubClass.WARDEN || ((Hero) ch).subClass == HeroSubClass.RESEARCHER)) {
+    	        Buff.affect(ch, Healing.class).setHeal(ch.HT, 0, 1);
+    	    } else {
+    	        Buff.affect(ch, Health.class).boost(ch.HT);
+    	    }
+    	}
+
+	    // 연출은 그대로 유지 (밟는 느낌 살아있음)
+    	if (Dungeon.level.heroFOV[pos]) {
+        CellEmitter.get( pos ).start( ShaftParticle.FACTORY, 0.2f, 3 );
+    	}
 	}
+	
+//	@Override
+//	public void activate( Char ch ) {
+//		
+//		if (ch != null){
+//			if (ch instanceof Hero && (((Hero) ch).subClass == HeroSubClass.WARDEN || ((Hero) ch).subClass == HeroSubClass.RESEARCHER)) {
+//				Buff.affect(ch, Healing.class).setHeal(ch.HT, 0, 1);
+//			} else {
+//				Buff.affect(ch, Health.class).boost(ch.HT);
+//			}
+//		}
+//		
+//		if (Dungeon.level.heroFOV[pos]) {
+//			CellEmitter.get( pos ).start( ShaftParticle.FACTORY, 0.2f, 3 );
+//		}
+//	}
 	
 	public static class Seed extends Plant.Seed {
 		{

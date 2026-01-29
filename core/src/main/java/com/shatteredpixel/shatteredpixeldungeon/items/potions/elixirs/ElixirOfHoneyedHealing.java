@@ -35,18 +35,38 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.noosa.audio.Sample;
 
+
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.ClericTempleBlessing;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+
+
+
 public class ElixirOfHoneyedHealing extends Elixir {
-	
+
 	{
 		image = ItemSpriteSheet.ELIXIR_HONEY;
+	}
+
+	private boolean forbidsHealFor(Hero hero){
+	    ClericTempleBlessing b = hero.buff(ClericTempleBlessing.class);
+	    return b != null && b.forbidsHealingPotion();
 	}
 	
 	@Override
 	public void apply(Hero hero) {
-		PotionOfHealing.cure(hero);
-		PotionOfHealing.heal(hero);
-		Buff.affect(hero, Hunger.class).satisfy(Hunger.HUNGRY/2f);
-		Talent.onFoodEaten(hero, Hunger.HUNGRY/2f, this);
+
+	    if (forbidsHealFor(hero)){
+	        // ✅ 회복/정화/허기회복 전부 금지할지 선택해야 함
+	        // 컨셉상 "회복 엘릭서" 자체를 못 마시게 하는 게 자연스럽기 때문에 여기서 return 추천
+	        GLog.w(Messages.get(this, "forbidden"));	
+	        return;
+   		}
+
+	    PotionOfHealing.cure(hero);
+	    PotionOfHealing.heal(hero);
+	    Buff.affect(hero, Hunger.class).satisfy(Hunger.HUNGRY/2f);
+	    Talent.onFoodEaten(hero, Hunger.HUNGRY/2f, this);
 	}
 	
 	@Override
@@ -58,13 +78,37 @@ public class ElixirOfHoneyedHealing extends Elixir {
 		
 		Char ch = Actor.findChar(cell);
 		if (ch != null){
-			PotionOfHealing.cure(ch);
-			PotionOfHealing.heal(ch);
-			if (ch instanceof Bee && ch.alignment != curUser.alignment){
-				ch.alignment = Char.Alignment.ALLY;
-				((Bee)ch).setPotInfo(-1, null);
-			}
+
+		    // ✅ 대상이 Hero이고, 그 Hero가 금지 상태면 회복/정화 스킵
+   			if (ch instanceof Hero){
+       			Hero h = (Hero) ch;
+       			ClericTempleBlessing b = h.buff(ClericTempleBlessing.class);
+        		if (b != null && b.forbidsHealingPotion()){
+        		    // 회복/정화는 안 주지만, 나머지 로직(벌 아군화)은 그대로
+        		} else {
+            		PotionOfHealing.cure(ch);
+            		PotionOfHealing.heal(ch);
+		        }
+    		} else {
+        		// 다른 캐릭터(몹, 벌 등)는 그대로 회복 가능
+        		PotionOfHealing.cure(ch);
+        		PotionOfHealing.heal(ch);
+		    }
+		    if (ch instanceof Bee && ch.alignment != curUser.alignment){
+        		ch.alignment = Char.Alignment.ALLY;
+        		((Bee)ch).setPotInfo(-1, null);
+		    }
 		}
+
+		//Char ch = Actor.findChar(cell);
+		//if (ch != null){
+		//	PotionOfHealing.cure(ch);
+		//	PotionOfHealing.heal(ch);
+		//	if (ch instanceof Bee && ch.alignment != curUser.alignment){
+		//		ch.alignment = Char.Alignment.ALLY;
+		//		((Bee)ch).setPotInfo(-1, null);
+		//	}
+		//}
 	}
 
 	//lower values, as it's cheaper to make
