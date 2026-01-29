@@ -18,15 +18,24 @@ task updateRoboVMProps(){
     
     props.setProperty ('appName', appName)
     //append .apple because com.shatteredpixel.shatteredpixeldungeon was taken =(
-    props.setProperty ('appApplePackageName', appPackageName + ".apple")
+    props.setProperty ('appApplePackageName', "com.erickim92.rearrangedpixeldungeon")
 
     props.setProperty ('appVersionCode', appVersionCode.toString())
     props.setProperty ('appVersionName', appVersionName)
     //parse out just #.#.# from version name, this is an apple requirement
     props.setProperty ('appShortVersionName', (appVersionName =~ /\d+\.\d+\.\d+/)[0])
 
-    props.setProperty ('appMainclass', appPackageName + ".ios.IOSLauncher")
+    props.setProperty('appMainclass', 'com.arrangedpixel.arrangedpixeldungon.ios.IOSLauncher')
     props.setProperty ('appExecutable', "IOSLauncher")
+
+    //iosSignIdentity=Apple Development: Eric Kim (ABCDE12345)
+
+    //props.setProperty('iosSignIdentity', 'Apple Development')
+    //props.setProperty('iosProvisioningProfile', 'Automatic')
+
+    props.setProperty('iosSignIdentity', 'Apple Development: erickim92@nate.com (PLRY554ZB6)')
+    props.setProperty('iosProvisioningProfile', '3a18fc70-453b-4001-a8ce-54be47855c3c')
+
 
     file("robovm.properties").withWriter { props.store(it, "Dynamically generated, do not commit to version control!") }
 }
