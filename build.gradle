@@ -14,8 +14,18 @@ allprojects {
         appName = 'Re-ReARranged Pixel Dungeon'
         appPackageName = 'com.arrangedpixel.arrangedpixeldungeon'
 
+        /** 오리지날 코드**/
+        //appVersionCode = 889
+        //appVersionName = '3.3.4'
+
+        /****버전관리를 위해 추가함*******/
+        spdVersionName = '3.3.4'      // 베이스(SPD) 버전
+        rpdVersionName = '3.40.1'     //  모드(RPD) 버전
+
         appVersionCode = 889
-        appVersionName = '3.3.4'
+        appShortVersionName = spdVersionName   // iOS 요구사항
+        appVersionName = "SPD_v${spdVersionName} RPD_v${rpdVersionName}"
+        /**-----------------------**/
 
         appJavaCompatibility = JavaVersion.VERSION_11
 
