@@ -174,9 +174,14 @@ public class TrinketCatalyst extends Item {
 			message.setPos(0, titlebar.bottom() + GAP);
 			add( message );
 
-			//roll new trinkets if trinkets were not already rolled
-			while (cata.rolledTrinkets.size() < NUM_TRINKETS){
-				cata.rolledTrinkets.add((Trinket) Generator.random(Generator.Category.TRINKET));
+			// roll new trinkets if trinkets were not already rolled
+			while (cata.rolledTrinkets.size() < NUM_TRINKETS - 1) {
+			    cata.rolledTrinkets.add(Generator.random(Generator.Category.TRINKET));
+			}
+
+			// last one is a random choice button (placeholder)
+			if (cata.rolledTrinkets.size() == NUM_TRINKETS - 1) {
+			    cata.rolledTrinkets.add(new RandomTrinket());
 			}
 
 			for (int i = 0; i < NUM_TRINKETS; i++){
