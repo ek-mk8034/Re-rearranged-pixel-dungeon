@@ -82,7 +82,7 @@ public class TrinketCatalyst extends Item {
 		}
 	}
 
-	public ArrayList<Trinket> rolledTrinkets = new ArrayList<>();
+	public ArrayList<Item> rolledTrinkets = new ArrayList<>();
 
 	public boolean hasRolledTrinkets(){
 		return !rolledTrinkets.isEmpty();
@@ -103,7 +103,7 @@ public class TrinketCatalyst extends Item {
 		super.restoreFromBundle(bundle);
 		rolledTrinkets.clear();
 		if (bundle.contains(ROLLED_TRINKETS)){
-			rolledTrinkets.addAll((Collection<Trinket>) ((Collection<?>)bundle.getCollection( ROLLED_TRINKETS )));
+			rolledTrinkets.addAll((Collection<Item>) ((Collection<?>)bundle.getCollection( ROLLED_TRINKETS )));
 		}
 	}
 
