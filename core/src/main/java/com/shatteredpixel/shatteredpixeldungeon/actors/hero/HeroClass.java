@@ -375,6 +375,18 @@ public enum HeroClass {
 
 		(hero.belongings.weapon = new Cudgel()).identify();
 		hero.belongings.weapon.activate(hero);
+		/*****for test*********
+		Cudgel w = new Cudgel();
+		w.level(99); // 테스트용: +2 (원하면 1~3 정도)
+		(hero.belongings.weapon = w).identify();
+		hero.belongings.weapon.activate(hero);
+
+		ClothArmor a = new ClothArmor();
+		a.level(99);
+		(hero.belongings.armor = a).identify();
+		hero.belongings.armor.activate(hero);
+		/**************/
+
 
 		HolyTome tome = new HolyTome();
 		(hero.belongings.artifact = tome).identify();

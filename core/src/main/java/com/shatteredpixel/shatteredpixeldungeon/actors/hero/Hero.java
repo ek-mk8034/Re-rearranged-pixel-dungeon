@@ -2286,7 +2286,7 @@ public class Hero extends Char {
 
 		    boolean ranged = false;
 		    if (wep != null) {
-		        boolean ranged = (wep instanceof DisposableMissileWeapon) || (wep instanceof MissileWeapon) || (wep instanceof Gun) || (wep instanceof BowWeapon);
+		        ranged = (wep instanceof DisposableMissileWeapon) || (wep instanceof MissileWeapon) || (wep instanceof Gun) || (wep instanceof BowWeapon);
 		    }
 
 		    damage = cb.modifyOutgoingDamage(this, damage, wep, ranged);

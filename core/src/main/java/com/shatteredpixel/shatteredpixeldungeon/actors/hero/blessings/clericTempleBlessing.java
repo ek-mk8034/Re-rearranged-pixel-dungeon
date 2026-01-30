@@ -262,6 +262,17 @@ public class ClericTempleBlessing extends Buff {
         return "ClericTempleBlessing(" + (type == null ? "null" : type.name()) + ")";
     }
     // ===========================================================
+
+    @Override
+    public String name() {
+        return uiName();
+    }
+
+    @Override
+    public String desc() {
+        return uiDesc();
+    }
+
     public String uiName() {
         if (type == null) return Messages.get(this, "name_unknown");
         switch (type) {
