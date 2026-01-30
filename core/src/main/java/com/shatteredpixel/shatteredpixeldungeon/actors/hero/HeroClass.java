@@ -139,6 +139,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingSt
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.DeviceCompat;
+//import com.shatteredpixel.shatteredpixeldungeon.items.changer.OldAmulet;
 
 public enum HeroClass {
 
@@ -385,8 +386,11 @@ public enum HeroClass {
 		a.level(99);
 		(hero.belongings.armor = a).identify();
 		hero.belongings.armor.activate(hero);
+		
+		OldAmulet oldAmulet = new OldAmulet();
+		oldAmulet.collect();
 		/**************/
-
+		
 
 		HolyTome tome = new HolyTome();
 		(hero.belongings.artifact = tome).identify();

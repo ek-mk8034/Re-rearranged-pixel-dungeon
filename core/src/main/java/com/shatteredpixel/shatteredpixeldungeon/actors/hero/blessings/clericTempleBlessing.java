@@ -42,8 +42,8 @@ public class ClericTempleBlessing extends Buff {
     // ======= TUNABLE CONSTANTS (easy balancing) =======
 
     // Corrupt Priest
-    public static final float CORRUPT_CURSED_WEAPON_DMG_MULT = 1.10f; // +10%
-    public static final float CORRUPT_CURSED_ARMOR_DR_MULT   = 1.10f; // +10%
+    public static final float CORRUPT_CURSED_WEAPON_DMG_MULT = 1.20f; // +10%
+    public static final float CORRUPT_CURSED_ARMOR_DR_MULT   = 1.20f; // +10%
 
     // Melee Pilgrim
     public static final float PILGRIM_RANGED_DMG_MULT = 0.50f; // -50%
@@ -51,14 +51,14 @@ public class ClericTempleBlessing extends Buff {
 
     // Inquisitor
     public static final float INQUISITOR_LIFESTEAL_FRACTION = 0.50f; // 50%
-    public static final int   INQUISITOR_DR_PENALTY         = 3; // -3 DR
-    public static final int   INQUISITOR_INCOMING_DAMAGE    = 3; // -3 DR
+    public static final int   INQUISITOR_DR_PENALTY         = 2; // -3 DR
+    public static final int   INQUISITOR_INCOMING_DAMAGE    = 2; // -3 DR
     public static final boolean INQUISITOR_LIFESTEAL_MELEE_ONLY = true;
 
     // Paladin Vow
     public static final float PALADIN_HEROSWORD_DMG_MULT = 1.50f; // +50%
-    public static final float PALADIN_OTHER_DMG_MULT     = 0.70f; // -30%
-    public static final float PALADIN_UNARMED_DMG_MULT   = 3.00f; // +300%
+    public static final float PALADIN_OTHER_DMG_MULT     = 0.80f; // -20%
+    public static final float PALADIN_UNARMED_DMG_MULT   = 5.00f; // +500%
     public static final int   PALADIN_DR_BONUS           = 2;
 
 
