@@ -58,7 +58,7 @@ public class ClericTempleBlessing extends Buff {
     // Paladin Vow
     public static final float PALADIN_HEROSWORD_DMG_MULT = 1.50f; // +50%
     public static final float PALADIN_OTHER_DMG_MULT     = 0.70f; // -30%
-    public static final float PALADIN_UNARMED_DMG_MULT   = 1.20f; // +20%
+    public static final float PALADIN_UNARMED_DMG_MULT   = 3.00f; // +300%
     public static final int   PALADIN_DR_BONUS           = 2;
 
 
