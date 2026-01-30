@@ -53,6 +53,20 @@ android {
             jniLibs.srcDirs = ['libs']
         }
     }
+    signingConfigs {
+        release {
+            storeFile file("../rearranged-release.keystore")
+            storePassword "Qlalfdlek1@"
+            keyAlias "rearranged"
+            keyPassword "Qlalfdlek1@"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
 }
 
 configurations { natives }

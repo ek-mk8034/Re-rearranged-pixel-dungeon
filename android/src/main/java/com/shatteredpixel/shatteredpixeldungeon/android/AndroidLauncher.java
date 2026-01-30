@@ -167,7 +167,7 @@ public class AndroidLauncher extends AndroidApplication implements GooglePlayGam
 
 		Button.longClick = ViewConfiguration.getLongPressTimeout()/1000f;
 		
-		initialize(new ShatteredPixelDungeon(support, this), config);
+		initialize(new ShatteredPixelDungeon(support), config);
 		
 	}
 
