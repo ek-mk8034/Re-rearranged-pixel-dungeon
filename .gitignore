@@ -35,3 +35,9 @@ android/src/main/res/values/strings.xml
 *.keystore
 *.jks
 
+
+# ios secret values
+robovm.properties
+robovm.local.properties
+
+

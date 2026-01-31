@@ -1,0 +1,5 @@
+# === RoboVM iOS signing (EXAMPLE ONLY) ===
+# Copy this file to robovm.local.properties and fill in real values
+
+iosSignIdentity=Apple Development: YOUR NAME (TEAMID)
+iosProvisioningProfile=YOUR-PROVISIONING-PROFILE-UUID
