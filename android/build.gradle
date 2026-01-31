@@ -1,5 +1,84 @@
 apply plugin: 'com.android.application'
 
+
+
+android {
+    namespace 'com.shatteredpixel.shatteredpixeldungeon.android'
+    compileSdk appAndroidCompileSDK
+    compileOptions.sourceCompatibility = compileOptions.targetCompatibility = appJavaCompatibility
+
+    sourceSets.main.assets.srcDirs = [new File(project(':core').projectDir, "/src/main/assets")]
+
+    defaultConfig {
+        manifestPlaceholders = [appName: appName]
+        applicationId appPackageName
+
+        versionCode appVersionCode
+        versionName appVersionName
+
+        minSdkVersion appAndroidMinSDK
+        targetSdk 34
+
+        resourceConfigurations += [
+                'en_US','cs','de','el','es','fr','hu','in','it','ja','ko','nl','pl','pt','ru','tr','uk','vi','zh_CN'
+        ]
+    }
+
+    // ✅ Release signing (한 곳에서 관리)
+    signingConfigs {
+        release {
+            storeFile file(REARRANGED_STORE_FILE)
+            storePassword REARRANGED_STORE_PASSWORD
+            keyAlias REARRANGED_KEY_ALIAS
+            keyPassword REARRANGED_KEY_PASSWORD
+        }
+    }
+
+
+    // ✅ buildTypes는 한 번만!
+    buildTypes {
+        debug {
+            // ✅ 기존 앱과 충돌 방지 (둘 다 설치 가능)
+            applicationIdSuffix ".indev"
+            versionNameSuffix "-INDEV"
+
+            dependencies {
+                debugImplementation project(':services:updates:debugUpdates')
+                debugImplementation project(':services:news:debugNews')
+            }
+        }
+
+        release {
+            // ✅ 기존 앱과 충돌 방지 (릴리즈도 공존 설치)
+            applicationIdSuffix ".rere"
+
+            // ✅ 릴리즈 APK 서명 적용
+            signingConfig signingConfigs.release
+
+            // R8 shrink/obfuscation
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            dependencies {
+                releaseImplementation project(':services:updates:githubUpdates')
+                releaseImplementation project(':services:news:shatteredNews')
+            }
+
+            ndk.debugSymbolLevel = "FULL"
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+}
+
+
+
+/*
 android {
     namespace 'com.shatteredpixel.shatteredpixeldungeon.android'
     compileSdk appAndroidCompileSDK
@@ -19,6 +98,7 @@ android {
         resourceConfigurations += ['en_US', 'cs', 'de', 'el', 'es', 'fr', 'hu', 'in', 'it', 'ja', 'ko', 'nl', 'pl', 'pt', 'ru', 'tr', 'uk', 'vi', 'zh_CN']
 
     }
+
 
     buildTypes {
         debug {
@@ -68,7 +148,7 @@ android {
         }
     }
 }
-
+*/
 configurations { natives }
 
 dependencies {

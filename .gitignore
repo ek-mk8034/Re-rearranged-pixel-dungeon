@@ -30,3 +30,8 @@ android/src/main/res/values/strings.xml
 
 .DS_Store
 **/.DS_Store
+
+# Android signing keys
+*.keystore
+*.jks
+
