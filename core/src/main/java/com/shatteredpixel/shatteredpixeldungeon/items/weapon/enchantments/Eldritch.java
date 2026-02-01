@@ -29,6 +29,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite.Glowing;
 import com.watabou.utils.Random;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Eldritch extends Weapon.Enchantment {
 
 	private static Glowing DARKGREY = new Glowing( 0x222222 );
@@ -45,7 +47,7 @@ public class Eldritch extends Weapon.Enchantment {
 
 		float powerMulti = Math.max(1f, procChance);
 
-		if (Random.Float() < procChance) {
+		if (MyeongProcContext.forceProc() || Random.Float() < procChance) {
 
 			if (defender == Dungeon.hero) {
 				Buff.prolong( defender, Terror.class, Terror.DURATION/4 );

@@ -36,6 +36,8 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Blooming extends Weapon.Enchantment {
 	
 	private static ItemSprite.Glowing DARK_GREEN = new ItemSprite.Glowing( 0x008800 );
@@ -48,7 +50,7 @@ public class Blooming extends Weapon.Enchantment {
 		// lvl 1 - 50%
 		// lvl 2 - 60%
 		float procChance = (level+1f)/(level+3f) * procChanceMultiplier(attacker);
-		if (Random.Float() < procChance) {
+		if (MyeongProcContext.forceProc() || Random.Float() < procChance) {
 
 			float powerMulti = Math.max(1f, procChance);
 

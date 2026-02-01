@@ -36,6 +36,8 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Shocking extends Weapon.Enchantment {
 
 	private static ItemSprite.Glowing WHITE = new ItemSprite.Glowing( 0xFFFFFF, 0.5f );
@@ -46,7 +48,7 @@ public class Shocking extends Weapon.Enchantment {
 
 		// flat 33% proc chance, effect scales with level via damage dealt
 		float procChance = (1/3f) * procChanceMultiplier(attacker);
-		if (Random.Float() < procChance) {
+		if (MyeongProcContext.forceProc() || Random.Float() < procChance) {
 
 			float powerMulti = Math.max(1f, procChance);
 			

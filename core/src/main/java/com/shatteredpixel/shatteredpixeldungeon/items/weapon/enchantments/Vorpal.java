@@ -30,6 +30,8 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Vorpal extends Weapon.Enchantment {
 
 	private static ItemSprite.Glowing RED = new ItemSprite.Glowing( 0xAA6666 );
@@ -46,7 +48,7 @@ public class Vorpal extends Weapon.Enchantment {
 
 		float powerMulti = Math.max(1f, procChance);
 
-		if (Random.Float() < procChance) {
+		if (MyeongProcContext.forceProc() || Random.Float() < procChance) {
 			Buff.affect(defender, Bleeding.class).set((damage/10f) * powerMulti);
 			Splash.at( defender.sprite.center(), -PointF.PI / 2, PointF.PI / 6, defender.sprite.blood(), 10 );
 		}

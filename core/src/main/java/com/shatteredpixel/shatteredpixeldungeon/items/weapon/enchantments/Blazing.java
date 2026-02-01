@@ -31,6 +31,8 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite.Glowing;
 import com.watabou.utils.Random;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Blazing extends Weapon.Enchantment {
 
 	private static ItemSprite.Glowing ORANGE = new ItemSprite.Glowing( 0xFF4400 );
@@ -43,7 +45,7 @@ public class Blazing extends Weapon.Enchantment {
 		// lvl 1 - 50%
 		// lvl 2 - 60%
 		float procChance = (level+1f)/(level+3f) * procChanceMultiplier(attacker);
-		if (Random.Float() < procChance) {
+		if (MyeongProcContext.forceProc() || Random.Float() < procChance) {
 
 			float powerMulti = Math.max(1f, procChance);
 

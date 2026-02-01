@@ -31,6 +31,8 @@ import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.watabou.utils.Random;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Elastic extends Weapon.Enchantment {
 	
 	private static ItemSprite.Glowing PINK = new ItemSprite.Glowing( 0xFF00FF );
@@ -43,7 +45,7 @@ public class Elastic extends Weapon.Enchantment {
 		// lvl 1 - 33%
 		// lvl 2 - 43%
 		float procChance = (level+1f)/(level+5f) * procChanceMultiplier(attacker);
-		if (Random.Float() < procChance) {
+		if (MyeongProcContext.forceProc() || Random.Float() < procChance) {
 
 			float powerMulti = Math.max(1f, procChance);
 

@@ -36,7 +36,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WeaponEnhance;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.AscendedForm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.ElementalStrike;
@@ -79,7 +78,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocki
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Stunning;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Unstable;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Vampiric;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Venomous;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Vorpal;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.DualDagger;
@@ -100,6 +98,12 @@ import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
+
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.SamuraiTempleBlessing;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.buffs.IaiCharge;
+import com.shatteredpixel.shatteredpixeldungeon.items.Sheath;
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
 
 abstract public class Weapon extends KindOfWeapon {
 
@@ -142,6 +146,27 @@ abstract public class Weapon extends KindOfWeapon {
 	protected float availableUsesToID = usesToID()/2f;
 	
 	public Enchantment enchantment;
+
+	/**
+	 * 명검(MYEONG) 발도 시 1회 발동할 랜덤 인챈트.
+	 * - 초기 버전: 경제/사거리/즉사급(Lucky/Projecting/Vorpal 등)은 제외
+	 */
+	private static Enchantment rollMyeongEnchantment() {
+		switch (Random.Int(10)) {
+			case 0:  return new Blazing();
+			case 1:  return new Blocking();
+			case 2:  return new Blooming();
+			case 3:  return new Chilling();
+			case 4:  return new Elastic();
+			case 5:  return new Eldritch();
+			case 6:  return new Shocking();
+			case 7:  return new Stunning();
+			case 8:  return new Vampiric();
+			case 9:  return new Venomous();
+			default: return new Vorpal();
+		}
+	}
+
 	public boolean enchantHardened = false;
 	public boolean curseInfusionBonus = false;
 	public boolean masteryPotionBonus = false;
@@ -153,6 +178,81 @@ abstract public class Weapon extends KindOfWeapon {
 		boolean wasAlly = defender.alignment == Char.Alignment.ALLY;
 		if (attacker.buff(MagicImmune.class) == null) {
 			Enchantment trinityEnchant = null;
+
+						// --------------------
+			// [명검 발도 처리]
+			// 조건:
+			// - 사무라이가 OldAmulet로 MYEONG 선택
+			// - 납검(Sheathing) + 차지(IaiCharge) 상태
+			// - 현재 무기가 근접무기이며 장착 중
+			//
+			// 효과:
+			// 1) 피해 배율: 납검 +10%, 집중(대기) 1회당 +10% (IaiCharge에서 계산)
+			// 2) 무조건 랜덤 인챈트 1회 발동 (영구 인챈트 변경 절대 금지)
+			// 3) 발도 소모: 납검/차지 해제
+			// --------------------
+			boolean myeongIaido = false;
+			//boolean skipBaseEnchantThisHit = false;
+
+			if (attacker instanceof Hero) {
+				Hero h = (Hero) attacker;
+
+				SamuraiTempleBlessing bless = h.buff(SamuraiTempleBlessing.class);
+				Sheath.Sheathing sh = h.buff(Sheath.Sheathing.class);
+				IaiCharge iai = h.buff(IaiCharge.class);
+
+				myeongIaido =
+						(h.heroClass == HeroClass.SAMURAI) &&
+						(bless != null && bless.path() == SamuraiTempleBlessing.Path.MYEONG) &&
+						(sh != null) &&
+						(iai != null) &&
+						(this instanceof MeleeWeapon) &&
+						isEquipped(h);
+
+				if (myeongIaido) {
+
+					// 1) 명검 배율 적용 (납검 10% + 집중당 10%)
+					damage = Math.round(damage * iai.myeongDamageMult());
+
+					// 2) 랜덤 인챈트 1회 발동 (무기 enchantment를 바꾸지 않는다!)
+					Enchantment myeong = rollMyeongEnchantment();
+
+
+					// 기존 무기 인챈트와 같은 종류면, 다시 뽑아서 다른 걸 나오게 (최대 N번)
+					if (enchantment != null) {
+					    int reroll = 0;
+					    while (myeong != null
+					            && myeong.getClass() == enchantment.getClass()
+					            && reroll < 10) {
+					        myeong = rollMyeongEnchantment();
+					        reroll++;
+					    }
+					}
+
+					// 그래도 null이거나(풀에 없음) 10번 돌렸는데 같으면 그냥 진행(원하면 여기서 강제 fallback도 가능)
+					if (myeong != null && defender.isAlive()) {
+					    MyeongProcContext.setForceProc(true);
+						try {
+						    damage = myeong.proc(this, attacker, defender, damage);
+						} finally {
+						    MyeongProcContext.setForceProc(false);
+						}
+					    if (defender.alignment == Char.Alignment.ALLY && !wasAlly) {
+					        becameAlly = true;
+					    }
+					}
+
+					// 3) 발도 소모: 납검/차지 해제
+					//    (Sheathing.detach()에서 IaiCharge도 같이 정리한다면, sh.detach()만 해도 됨)
+					sh.detach();
+
+					// 밸런스: 명검 발도 시 "기존 무기 인챈트(enchantment)"까지 같이 터지면 너무 세질 수 있어서
+					// 이번 공격에서는 기본 인챈트는 스킵(랜덤 1회는 무조건 발동했으니 재미는 유지됨)
+					//skipBaseEnchantThisHit = true;
+				}
+			}
+
+
 			//only when it's the hero or a char that uses the hero's weapon
 			if (Dungeon.hero.buff(BodyForm.BodyFormBuff.class) != null && this instanceof MeleeWeapon
 					&& (attacker == Dungeon.hero || attacker instanceof MirrorImage || attacker instanceof ShadowClone.ShadowAlly)){
@@ -309,6 +409,26 @@ abstract public class Weapon extends KindOfWeapon {
 	@Override
 	public float accuracyFactor(Char owner, Char target) {
 		
+		// [요검 발도] 2턴 집중(=charge>=2)면 확정 명중
+		if (owner instanceof Hero) {
+		    Hero h = (Hero) owner;
+
+		    SamuraiTempleBlessing bless = h.buff(SamuraiTempleBlessing.class);
+		    Sheath.Sheathing sh = h.buff(Sheath.Sheathing.class);
+		    IaiCharge iai = h.buff(IaiCharge.class);
+
+		    if (h.heroClass == HeroClass.SAMURAI
+		            && bless != null && bless.path() == SamuraiTempleBlessing.Path.YOK
+		            && sh != null
+		            && iai != null && iai.guaranteedHit()
+		            && isEquipped(h)) {
+
+		        // accuracyFactor는 "명중 계수"라서 크게 주면 사실상 100%가 됨
+		        return 999f;
+		    }
+		}
+
+
 		int encumbrance = 0;
 		
 		if( owner instanceof Hero ){

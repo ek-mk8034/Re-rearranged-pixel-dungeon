@@ -89,6 +89,9 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
+
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.buffs.IaiCharge;
+
 public class MeleeWeapon extends Weapon {
 
 	public static String AC_ABILITY = "ABILITY";
@@ -419,8 +422,40 @@ public class MeleeWeapon extends Weapon {
 				damage += Hero.heroDamageIntRange( 0, exStr );
 			}
 		}
+		// --- IaiCharge damage multiplier (only while Sheathing is active) ---
+		if (owner instanceof Hero) {
+		    Hero h = (Hero) owner;
+
+		    IaiCharge iai = h.buff(IaiCharge.class);
+		    if (iai != null && h.buff(Sheath.Sheathing.class) != null) {
+		        damage = Math.round(damage * iai.damageMult(h));
+		    }
+		}
 		return damage;
 	}
+
+	@Override
+	public float accuracyFactor(Char owner, Char target) {
+	    float acc = super.accuracyFactor(owner, target);
+
+	    if (owner instanceof Hero) {
+	        Hero h = (Hero) owner;
+
+	        IaiCharge iai = h.buff(IaiCharge.class);
+	        if (iai != null
+	                && h.buff(com.shatteredpixel.shatteredpixeldungeon.items.Sheath.Sheathing.class) != null
+	                && iai.guaranteedHit()) {
+
+	            // 사실상 필중 (회피/명중 계산을 압도)
+	            return acc * 1000f;
+	            // 또는 더 강하게 하고 싶으면:
+	            // return Float.POSITIVE_INFINITY;
+	        }
+	    }
+
+	    return acc;
+	}
+
 
 	public int tier() {
 		return this.tier;
@@ -1009,6 +1044,8 @@ public class MeleeWeapon extends Weapon {
 			maxDuration = bundle.getFloat(MAX_DURATION);
 		}
 	}
+
+
 
 	public static class PlaceHolder extends MeleeWeapon {
 

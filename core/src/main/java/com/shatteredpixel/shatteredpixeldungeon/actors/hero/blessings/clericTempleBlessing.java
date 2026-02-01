@@ -235,25 +235,6 @@ public class ClericTempleBlessing extends Buff {
     }
 
 
-    // =================== Save / Load ===================
-
-    @Override
-    public void storeInBundle(Bundle bundle) {
-        super.storeInBundle(bundle);
-        bundle.put(B_TYPE, type == null ? Type.CORRUPT_PRIEST.name() : type.name());
-    }
-
-    @Override
-    public void restoreFromBundle(Bundle bundle) {
-        super.restoreFromBundle(bundle);
-        String s = bundle.getString(B_TYPE);
-        try {
-            type = Type.valueOf(s);
-        } catch (Exception e) {
-            type = Type.CORRUPT_PRIEST;
-        }
-    }
-
     // =================== Optional UI / Debug ===================
 
     @Override
@@ -307,6 +288,26 @@ public class ClericTempleBlessing extends Buff {
     public int icon() {
         return BuffIndicator.BLESS; // 일단 아무거나 설정
     }
+    
+    // =================== Save / Load ===================
+
+    @Override
+    public void storeInBundle(Bundle bundle) {
+        super.storeInBundle(bundle);
+        bundle.put(B_TYPE, type == null ? Type.CORRUPT_PRIEST.name() : type.name());
+    }
+
+    @Override
+    public void restoreFromBundle(Bundle bundle) {
+        super.restoreFromBundle(bundle);
+        String s = bundle.getString(B_TYPE);
+        try {
+            type = Type.valueOf(s);
+        } catch (Exception e) {
+            type = Type.CORRUPT_PRIEST;
+        }
+    }
+
 }
 
 

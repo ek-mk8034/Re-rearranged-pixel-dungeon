@@ -30,6 +30,8 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite.Glowing;
 import com.watabou.utils.Random;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Chilling extends Weapon.Enchantment {
 
 	private static ItemSprite.Glowing TEAL = new ItemSprite.Glowing( 0x00FFFF );
@@ -42,7 +44,7 @@ public class Chilling extends Weapon.Enchantment {
 		// lvl 1 - 40%
 		// lvl 2 - 50%
 		float procChance = (level+1f)/(level+4f) * procChanceMultiplier(attacker);
-		if (Random.Float() < procChance) {
+		if (MyeongProcContext.forceProc() || Random.Float() < procChance) {
 
 			float powerMulti = Math.max(1f, procChance);
 

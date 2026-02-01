@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
@@ -21,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -32,11 +34,14 @@ import com.watabou.utils.BArray;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.SamuraiTempleBlessing;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.blessings.buffs.IaiCharge;
+
 import java.util.ArrayList;
 
 public class Sheath extends Item {
 
-    public static final String AC_USE	= "USE";
+    public static final String AC_USE = "USE";
 
     {
         image = ItemSpriteSheet.SHEATH;
@@ -47,27 +52,53 @@ public class Sheath extends Item {
     }
 
     @Override
-    public ArrayList<String> actions(Hero hero ) {
+    public ArrayList<String> actions(Hero hero) {
         ArrayList<String> actions = super.actions(hero);
-        actions.add(AC_USE);
+        if (!actions.contains(AC_USE)) actions.add(AC_USE);
         return actions;
     }
 
     @Override
     public void execute(Hero hero, String action) {
         super.execute(hero, action);
-        if (action.equals( AC_USE )) {
-            if (hero.belongings.weapon instanceof MeleeWeapon) {
-                if (hero.buff(Sheathing.class) != null) {
-                    hero.buff(Sheathing.class).detach();
-                } else {
-                    Buff.affect(hero, Sheathing.class);
-                }
-                hero.spendAndNext(Actor.TICK);
-            } else {
-                GLog.w(Messages.get(this, "no_weapon"));
+
+        if (!AC_USE.equals(action)) return;
+
+        // 근접무기 아니면 납검 불가
+        if (!(hero.belongings.weapon instanceof MeleeWeapon)) {
+            GLog.w(Messages.get(this, "no_weapon"));
+            return;
+        }
+
+        // 현재 납검 버프 확인
+        Sheathing sheathing = hero.buff(Sheathing.class);
+
+        if (sheathing != null) {
+            // 납검 OFF
+            sheathing.detach();
+            hero.spendAndNext(Actor.TICK);
+            return;
+        }
+
+        // 납검 ON (버프 생성)
+        Sheathing newSheathing = Buff.affect(hero, Sheathing.class);
+
+        // "막 켠 직후 첫 act"에서 자동스택 1회 스킵(이중 스택 방지)
+        if (newSheathing != null) newSheathing.markSkipNextAutoFocus();
+
+        // 사무라이 + 축복 선택 완료면 IaiCharge 시작(요검이면 비용)
+        if (hero.heroClass == HeroClass.SAMURAI) {
+            SamuraiTempleBlessing b = hero.buff(SamuraiTempleBlessing.class);
+            if (b != null) {
+                IaiCharge iai = hero.buff(IaiCharge.class);
+                if (iai == null) iai = Buff.affect(hero, IaiCharge.class);
+
+                boolean pay = (b.path() == SamuraiTempleBlessing.Path.YOK);
+                iai.onSheatheStart(hero, pay);
             }
         }
+
+        hero.spendAndNext(Actor.TICK);
     }
 
     @Override
@@ -88,9 +119,9 @@ public class Sheath extends Item {
     public static boolean isFlashSlash() {
         Hero hero = Dungeon.hero;
         return hero.subClass == HeroSubClass.MASTER &&
-                    hero.buff(Sheathing.class) != null &&
-                    hero.buff(FlashSlashCooldown.class) == null &&
-                    hero.buff(DashAttackTracker.class) == null;
+                hero.buff(Sheathing.class) != null &&
+                hero.buff(FlashSlashCooldown.class) == null &&
+                hero.buff(DashAttackTracker.class) == null;
     }
 
     public static class Sheathing extends Buff implements ActionIndicator.Action {
@@ -101,9 +132,16 @@ public class Sheath extends Item {
 
         public int pos = -1;
 
+        // 이 필드는 "버프 인스턴스"에 있어야 함
+        private boolean skipNextAutoFocus = false;
+
+        public void markSkipNextAutoFocus() {
+            skipNextAutoFocus = true;
+        }
+
         @Override
         public boolean attachTo(Char target) {
-            if (super.attachTo(target)){
+            if (super.attachTo(target)) {
                 if (hero != null) {
                     Dungeon.observe();
                     if (hero.subClass == HeroSubClass.MASTER && hero.buff(DashAttackCooldown.class) == null) {
@@ -119,7 +157,18 @@ public class Sheath extends Item {
         @Override
         public void detach() {
             super.detach();
-            if (hero != null) {
+
+            // 납검 해제 시 차지 버프도 같이 제거
+            Hero h = (target instanceof Hero) ? (Hero) target : null;
+            if (h != null
+                    && h.heroClass == HeroClass.SAMURAI
+                    && h.buff(SamuraiTempleBlessing.class) != null) {
+
+                IaiCharge iai = h.buff(IaiCharge.class);
+                if (iai != null) iai.detach();
+            }
+
+            if (h != null) {
                 Dungeon.observe();
                 GameScene.updateFog();
                 ActionIndicator.clearAction(this);
@@ -128,6 +177,7 @@ public class Sheath extends Item {
 
         @Override
         public boolean act() {
+
             if (hero.subClass == HeroSubClass.MASTER) {
                 if (hero.buff(DashAttackCooldown.class) == null) {
                     ActionIndicator.setAction(this);
@@ -136,12 +186,35 @@ public class Sheath extends Item {
                 }
             }
 
+            Hero h = (target instanceof Hero) ? (Hero) target : null;
             if (pos == -1) pos = target.pos;
-            if (pos != target.pos || !(hero.belongings.weapon instanceof MeleeWeapon)) {
+
+            // 이동/무기변경 등으로 납검 조건 깨지면 해제
+            if (pos != target.pos || h == null || !(h.belongings.weapon instanceof MeleeWeapon)) {
                 detach();
-            } else {
-                spend(TICK);
+                return true;
             }
+
+            // ✅ 납검을 막 켠 직후 첫 act는 자동스택 스킵 (이중 스택 방지)
+            if (skipNextAutoFocus) {
+                skipNextAutoFocus = false;
+                spend(TICK);
+                return true;
+            }
+
+            // --- [사무라이 + 축복 선택 시] 납검 유지 중 매 턴 자동 스택 ---
+            if (h.heroClass == HeroClass.SAMURAI) {
+                SamuraiTempleBlessing b = h.buff(SamuraiTempleBlessing.class);
+                if (b != null) {
+                    IaiCharge iai = h.buff(IaiCharge.class);
+                    if (iai == null) iai = Buff.affect(h, IaiCharge.class);
+
+                    boolean pay = (b.path() == SamuraiTempleBlessing.Path.YOK);
+                    iai.onFocus(h, pay);   // 매 턴 자동 스택(+요검이면 비용)
+                }
+            }
+
+            spend(TICK);
             return true;
         }
 
@@ -157,7 +230,18 @@ public class Sheath extends Item {
 
         @Override
         public int indicatorColor() {
-            return 0x171717;
+            Hero h = (target instanceof Hero) ? (Hero) target : null;
+            if (h != null) {
+                SamuraiTempleBlessing b = h.buff(SamuraiTempleBlessing.class);
+                if (b != null) {
+                    if (b.path() == SamuraiTempleBlessing.Path.YOK) {
+                        return 0xCC0000; // 요검: 진한 빨강
+                    } else {
+                        return 0xFFFFFF; // 명검: 흰색
+                    }
+                }
+            }
+            return 0x171717; // 기본
         }
 
         @Override
@@ -167,21 +251,26 @@ public class Sheath extends Item {
 
         private static final String POS = "pos";
         private static final String CAN_DASH = "canDash";
+        private static final String SKIP = "skipNextAutoFocus";
+
         @Override
         public void storeInBundle(Bundle bundle) {
             super.storeInBundle(bundle);
-            bundle.put( POS, pos );
-            bundle.put( CAN_DASH, (hero.subClass == HeroSubClass.MASTER && hero.buff(DashAttackCooldown.class) == null) );
+            bundle.put(POS, pos);
+            bundle.put(CAN_DASH, (hero.subClass == HeroSubClass.MASTER && hero.buff(DashAttackCooldown.class) == null));
+            bundle.put(SKIP, skipNextAutoFocus);
         }
 
         @Override
         public void restoreFromBundle(Bundle bundle) {
             super.restoreFromBundle(bundle);
-            pos = bundle.getInt( POS );
+            pos = bundle.getInt(POS);
 
             if (bundle.getBoolean(CAN_DASH)) {
                 ActionIndicator.setAction(this);
             }
+
+            skipNextAutoFocus = bundle.getBoolean(SKIP);
         }
 
         @Override
@@ -199,7 +288,7 @@ public class Sheath extends Item {
             return Messages.get(this, "desc");
         }
 
-        public int blinkDistance(){
+        public int blinkDistance() {
             return 500;
         }
 
@@ -207,40 +296,38 @@ public class Sheath extends Item {
             @Override
             public void onSelect(Integer cell) {
                 if (cell == null) return;
-                final Char enemy = Actor.findChar( cell );
+                final Char enemy = Actor.findChar(cell);
                 if (enemy != null) {
                     if (Dungeon.hero.isCharmedBy(enemy) || enemy instanceof NPC || enemy == Dungeon.hero) {
                         GLog.w(Messages.get(Sheathing.class, "no_target"));
                     } else {
-                        //just attack them then!
-                        if (Dungeon.hero.canAttack(enemy)){
-                            Dungeon.hero.curAction = new HeroAction.Attack( enemy );
+                        // just attack them then!
+                        if (Dungeon.hero.canAttack(enemy)) {
+                            Dungeon.hero.curAction = new HeroAction.Attack(enemy);
                             Dungeon.hero.next();
                             return;
                         }
 
-                        PathFinder.buildDistanceMap(Dungeon.hero.pos,BArray.or(Dungeon.level.passable, Dungeon.level.avoid, null), blinkDistance());
+                        PathFinder.buildDistanceMap(Dungeon.hero.pos, BArray.or(Dungeon.level.passable, Dungeon.level.avoid, null), blinkDistance());
                         int dest = -1;
-                        for (int i : PathFinder.NEIGHBOURS8){
-                            //cannot blink into a cell that's occupied or impassable, only over them
-                            if (Actor.findChar(cell+i) != null)     continue;
-                            if (!Dungeon.level.passable[cell+i] && !(target.flying && Dungeon.level.avoid[cell+i])) {
+                        for (int i : PathFinder.NEIGHBOURS8) {
+                            if (Actor.findChar(cell + i) != null) continue;
+                            if (!Dungeon.level.passable[cell + i] && !(target.flying && Dungeon.level.avoid[cell + i])) {
                                 continue;
                             }
 
-                            if (dest == -1 || PathFinder.distance[dest] > PathFinder.distance[cell+i]){
-                                dest = cell+i;
-                                //if two cells have the same pathfinder distance, prioritize the one with the closest true distance to the hero
-                            } else if (PathFinder.distance[dest] == PathFinder.distance[cell+i]){
-                                if (Dungeon.level.trueDistance(Dungeon.hero.pos, dest) > Dungeon.level.trueDistance(Dungeon.hero.pos, cell+i)){
-                                    dest = cell+i;
+                            if (dest == -1 || PathFinder.distance[dest] > PathFinder.distance[cell + i]) {
+                                dest = cell + i;
+                            } else if (PathFinder.distance[dest] == PathFinder.distance[cell + i]) {
+                                if (Dungeon.level.trueDistance(Dungeon.hero.pos, dest) > Dungeon.level.trueDistance(Dungeon.hero.pos, cell + i)) {
+                                    dest = cell + i;
                                 }
                             }
                         }
 
                         if (dest == -1 || PathFinder.distance[dest] == Integer.MAX_VALUE || Dungeon.hero.rooted) {
                             GLog.w(Messages.get(Sheathing.class, "cannot_dash"));
-                            if (Dungeon.hero.rooted) PixelScene.shake( 1, 1f );
+                            if (Dungeon.hero.rooted) PixelScene.shake(1, 1f);
                             return;
                         }
 
@@ -251,22 +338,21 @@ public class Sheath extends Item {
 
                         Dungeon.hero.pos = dest;
                         Dungeon.level.occupyCell(Dungeon.hero);
-                        //prevents the hero from being interrupted by seeing new enemies
                         Dungeon.observe();
                         GameScene.updateFog();
                         Dungeon.hero.checkVisibleMobs();
 
-                        Dungeon.hero.sprite.place( Dungeon.hero.pos );
-                        Dungeon.hero.sprite.turnTo( Dungeon.hero.pos, cell);
-                        CellEmitter.get( Dungeon.hero.pos ).burst( Speck.factory( Speck.WOOL ), 6 );
-                        Sample.INSTANCE.play( Assets.Sounds.PUFF );
+                        Dungeon.hero.sprite.place(Dungeon.hero.pos);
+                        Dungeon.hero.sprite.turnTo(Dungeon.hero.pos, cell);
+                        CellEmitter.get(Dungeon.hero.pos).burst(Speck.factory(Speck.WOOL), 6);
+                        Sample.INSTANCE.play(Assets.Sounds.PUFF);
 
-                        Dungeon.hero.curAction = new HeroAction.Attack( enemy );
+                        Dungeon.hero.curAction = new HeroAction.Attack(enemy);
                         Dungeon.hero.next();
                     }
                 } else {
                     int dest;
-                    PathFinder.buildDistanceMap(Dungeon.hero.pos,BArray.or(Dungeon.level.passable, Dungeon.level.avoid, null), blinkDistance());
+                    PathFinder.buildDistanceMap(Dungeon.hero.pos, BArray.or(Dungeon.level.passable, Dungeon.level.avoid, null), blinkDistance());
                     if (!Dungeon.level.passable[cell] && !(target.flying && Dungeon.level.avoid[cell])) {
                         GLog.w(Messages.get(Sheathing.class, "cannot_dash"));
                         return;
@@ -275,26 +361,25 @@ public class Sheath extends Item {
                     }
                     if (PathFinder.distance[dest] == Integer.MAX_VALUE || Dungeon.hero.rooted) {
                         GLog.w(Messages.get(Sheathing.class, "cannot_dash"));
-                        if (Dungeon.hero.rooted) PixelScene.shake( 1, 1f );
+                        if (Dungeon.hero.rooted) PixelScene.shake(1, 1f);
                         return;
                     }
 
                     Dungeon.hero.pos = dest;
                     Dungeon.level.occupyCell(Dungeon.hero);
-                    //prevents the hero from being interrupted by seeing new enemies
                     Dungeon.observe();
                     GameScene.updateFog();
                     Dungeon.hero.checkVisibleMobs();
 
-                    Dungeon.hero.sprite.place( Dungeon.hero.pos );
-                    Dungeon.hero.sprite.turnTo( Dungeon.hero.pos, cell);
-                    CellEmitter.get( Dungeon.hero.pos ).burst( Speck.factory( Speck.WOOL ), 6 );
-                    Sample.INSTANCE.play( Assets.Sounds.PUFF );
+                    Dungeon.hero.sprite.place(Dungeon.hero.pos);
+                    Dungeon.hero.sprite.turnTo(Dungeon.hero.pos, cell);
+                    CellEmitter.get(Dungeon.hero.pos).burst(Speck.factory(Speck.WOOL), 6);
+                    Sample.INSTANCE.play(Assets.Sounds.PUFF);
 
                     Dungeon.hero.spendAndNext(Actor.TICK);
 
                     GLog.w(Messages.get(Sheathing.class, "no_target"));
-                    Buff.prolong(hero, DashAttackCooldown.class, (100-10*hero.pointsInTalent(Talent.DYNAMIC_PREPARATION)));
+                    Buff.prolong(hero, DashAttackCooldown.class, (100 - 10 * hero.pointsInTalent(Talent.DYNAMIC_PREPARATION)));
                     if (hero.buff(DashAttackAcceleration.class) != null) {
                         hero.buff(DashAttackAcceleration.class).detach();
                     }
@@ -307,7 +392,6 @@ public class Sheath extends Item {
                 return Messages.get(SpiritBow.class, "prompt");
             }
         };
-
     }
 
     public static class CriticalAttack extends Buff {}
@@ -332,19 +416,20 @@ public class Sheath extends Item {
         }
 
         private static final String HIT_AMOUNT = "hitAmount";
+
         @Override
         public void storeInBundle(Bundle bundle) {
             super.storeInBundle(bundle);
-            bundle.put( HIT_AMOUNT, hitAmount );
+            bundle.put(HIT_AMOUNT, hitAmount);
         }
 
         @Override
         public void restoreFromBundle(Bundle bundle) {
             super.restoreFromBundle(bundle);
-            hitAmount = bundle.getInt( HIT_AMOUNT );
+            hitAmount = bundle.getInt(HIT_AMOUNT);
         }
 
-        public String iconTextDisplay(){
+        public String iconTextDisplay() {
             return String.valueOf(hitAmount);
         }
 
@@ -364,21 +449,19 @@ public class Sheath extends Item {
         }
     }
 
-    public static class FlashSlashCooldown extends FlavourBuff{
+    public static class FlashSlashCooldown extends FlavourBuff {
         public int icon() { return BuffIndicator.TIME; }
         public void tintIcon(Image icon) { icon.hardlight(0x586EDB); }
         public float iconFadePercent() { return Math.max(0, visualcooldown() / 30); }
-    };
+    }
 
-    public static class DashAttackCooldown extends FlavourBuff{
+    public static class DashAttackCooldown extends FlavourBuff {
         public int icon() { return BuffIndicator.TIME; }
         public void tintIcon(Image icon) { icon.hardlight(0xFF7F00); }
         public float iconFadePercent() { return Math.max(0, visualcooldown() / 100); }
         @Override
-        public void detach() {
-            super.detach();
-        }
-    };
+        public void detach() { super.detach(); }
+    }
 
     public static class DashAttackTracker extends Buff {}
 
@@ -396,7 +479,7 @@ public class Sheath extends Item {
 
         public void hit() {
             dmgMulti += 0.05f;
-            dmgMulti = Math.min(dmgMulti, 1+0.25f*hero.pointsInTalent(Talent.ACCELERATION));
+            dmgMulti = Math.min(dmgMulti, 1 + 0.25f * hero.pointsInTalent(Talent.ACCELERATION));
         }
 
         public float getDmgMulti() {
@@ -409,16 +492,17 @@ public class Sheath extends Item {
         }
 
         private static final String MULTI = "dmgMulti";
+
         @Override
         public void storeInBundle(Bundle bundle) {
             super.storeInBundle(bundle);
-            bundle.put( MULTI, dmgMulti );
+            bundle.put(MULTI, dmgMulti);
         }
 
         @Override
         public void restoreFromBundle(Bundle bundle) {
             super.restoreFromBundle(bundle);
-            dmgMulti = bundle.getFloat( MULTI );
+            dmgMulti = bundle.getFloat(MULTI);
         }
 
         @Override
@@ -433,7 +517,57 @@ public class Sheath extends Item {
 
         @Override
         public String desc() {
-            return Messages.get(this, "desc", Messages.decimalFormat("#", dmgMulti*100));
+            return Messages.get(this, "desc", Messages.decimalFormat("#", dmgMulti * 100));
         }
     }
+
+    @Override
+    public String name() {
+        Hero h = Dungeon.hero;
+        SamuraiTempleBlessing b = (h != null) ? h.buff(SamuraiTempleBlessing.class) : null;
+
+        if (b != null) {
+            if (b.path() == SamuraiTempleBlessing.Path.YOK) {
+                return Messages.get(this, "name_yok");     // 요검집
+            } else if (b.path() == SamuraiTempleBlessing.Path.MYEONG) {
+                return Messages.get(this, "name_myeong");  // 명검집
+            }
+        }
+        return super.name();
+    }
+
+    @Override
+    public String desc() {
+        String base = super.desc();
+
+        Hero h = Dungeon.hero;
+        SamuraiTempleBlessing b = (h != null) ? h.buff(SamuraiTempleBlessing.class) : null;
+
+        if (b != null) {
+            if (b.path() == SamuraiTempleBlessing.Path.YOK) {
+                return base + "\n\n" + Messages.get(this, "desc_yok");
+            } else if (b.path() == SamuraiTempleBlessing.Path.MYEONG) {
+                return base + "\n\n" + Messages.get(this, "desc_myeong");
+            }
+        }
+        return base;
+    }
+
+    private static final ItemSprite.Glowing YOK_GLOW    = new ItemSprite.Glowing(0xCC0000);
+    private static final ItemSprite.Glowing MYEONG_GLOW = new ItemSprite.Glowing(0xFFFFFF);
+
+    @Override
+    public ItemSprite.Glowing glowing() {
+        Hero h = Dungeon.hero;
+        SamuraiTempleBlessing b = (h != null) ? h.buff(SamuraiTempleBlessing.class) : null;
+
+        if (b != null) {
+            if (b.path() == SamuraiTempleBlessing.Path.YOK)    return YOK_GLOW;
+            if (b.path() == SamuraiTempleBlessing.Path.MYEONG) return MYEONG_GLOW;
+        }
+        return super.glowing();
+    }
+
+
+
 }

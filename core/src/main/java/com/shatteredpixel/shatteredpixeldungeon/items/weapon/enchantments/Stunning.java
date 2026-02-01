@@ -29,6 +29,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite.Glowing;
 import com.watabou.utils.Random;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Stunning extends Weapon.Enchantment {
 	
 	private static Glowing YELLOW = new Glowing( 0xCCAA44 );
@@ -45,7 +47,7 @@ public class Stunning extends Weapon.Enchantment {
 
 		float powerMulti = Math.max(1f, procChance);
 
-		if (Random.Float() < procChance) {
+		if (MyeongProcContext.forceProc() || Random.Float() < procChance) {
 			Buff.prolong( defender, Paralysis.class, 1f * powerMulti );
 			defender.sprite.emitter().burst(Speck.factory(Speck.LIGHT), 12 );
 		}

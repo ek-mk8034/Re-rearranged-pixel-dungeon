@@ -30,6 +30,8 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite.Glowing;
 import com.watabou.utils.Random;
 
+import com.shatteredpixel.shatteredpixeldungeon.utils.MyeongProcContext;
+
 public class Vampiric extends Weapon.Enchantment {
 
 	private static ItemSprite.Glowing RED = new ItemSprite.Glowing( 0x660022 );
@@ -43,7 +45,7 @@ public class Vampiric extends Weapon.Enchantment {
 
 		healChance *= procChanceMultiplier(attacker);
 		
-		if (Random.Float() < healChance
+		if (MyeongProcContext.forceProc() || Random.Float() < healChance
 				&& attacker.alignment != defender.alignment
 				&& (defender.alignment != Char.Alignment.NEUTRAL || defender instanceof Mimic)){
 
