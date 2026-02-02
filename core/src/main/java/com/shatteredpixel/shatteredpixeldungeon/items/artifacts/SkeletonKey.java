@@ -739,6 +739,11 @@ public class SkeletonKey extends Artifact {
 	        processExcessKeys();
 	    }
 
+		private boolean isTempleBranchLevel() {
+		    return Dungeon.level instanceof com.shatteredpixel.shatteredpixeldungeon.levels.TempleNewLevel
+		        || Dungeon.level instanceof com.shatteredpixel.shatteredpixeldungeon.levels.TempleLastLevel;
+		}
+
 	    /**
 	     * “이 층에서 남아있어야 하는 키 개수(keysNeeded)”보다
 	     * Notes에 기록된 키가 더 많으면(= 초과 보유) 자동으로 버린다.
@@ -748,44 +753,48 @@ public class SkeletonKey extends Artifact {
 	     *   이때 플레이어가 키를 계속 들고 있으면 “필요 이상 키”가 남게 됨.
 	     * - 그래서 Notes(키 보유 기록)에서 초과분을 정리해 UI/일관성을 맞춤.
 	     */
-	    public void processExcessKeys() {
-	        ensureCapacity(Dungeon.depth);
+		public void processExcessKeys(){
+		    // ✅ Temple(사원) 같은 분기 레벨에서는 "초과 키 폐기"를 하지 않는다.
+		    // 본층과 depth를 공유하기 때문에, 여기서 버리면 사원 보상키/퍼즐키가 날아갈 수 있음.
+		    if (isTempleBranchLevel()) return;
 
-	        boolean removed = false;
+		    ensureCapacity(Dungeon.depth);
+
+		    int keysNeeded = ironKeysNeeded[Dungeon.depth];
+		    boolean removed = false;
 
 	        // 1) 철 열쇠 초과 제거
-	        int keysNeeded = ironKeysNeeded[Dungeon.depth];
-	        if (keysNeeded >= 0) {
-	            while (Notes.keyCount(new IronKey(Dungeon.depth)) > keysNeeded) {
-	                Notes.remove(new IronKey(Dungeon.depth));
-	                removed = true;
-	            }
-	        }
+		    if (keysNeeded >= 0) {
+		        while (Notes.keyCount(new IronKey(Dungeon.depth)) > keysNeeded) {
+		            Notes.remove(new IronKey(Dungeon.depth));
+		            removed = true;
+		        }
+		    }
 
 	        // 2) 황금 열쇠 초과 제거
-	        keysNeeded = goldenKeysNeeded[Dungeon.depth];
-	        if (keysNeeded >= 0) {
-	            while (Notes.keyCount(new GoldenKey(Dungeon.depth)) > keysNeeded) {
-	                Notes.remove(new GoldenKey(Dungeon.depth));
-	                removed = true;
-	            }
-	        }
+		    keysNeeded = goldenKeysNeeded[Dungeon.depth];
+		    if (keysNeeded >= 0) {
+		        while (Notes.keyCount(new GoldenKey(Dungeon.depth)) > keysNeeded) {
+		            Notes.remove(new GoldenKey(Dungeon.depth));
+		            removed = true;
+		        }
+		    }
 
 	        // 3) 수정 열쇠 초과 제거
-	        keysNeeded = crystalKeysNeeded[Dungeon.depth];
-	        if (keysNeeded >= 0) {
-	            while (Notes.keyCount(new CrystalKey(Dungeon.depth)) > keysNeeded) {
-	                Notes.remove(new CrystalKey(Dungeon.depth));
-	                removed = true;
-	            }
-	        }
+		    keysNeeded = crystalKeysNeeded[Dungeon.depth];
+		    if (keysNeeded >= 0) {
+		        while (Notes.keyCount(new CrystalKey(Dungeon.depth)) > keysNeeded) {
+		            Notes.remove(new CrystalKey(Dungeon.depth));
+		            removed = true;
+		        }
+		    }
 
 	        // 실제 제거가 있었다면 UI 갱신 + 로그 출력
-	        if (removed) {
-	            GameScene.updateKeyDisplay();
-	            GLog.i(Messages.get(SkeletonKey.class, "discard"));
-	        }
-	    }
+		    if (removed){
+		        GameScene.updateKeyDisplay();
+		        GLog.i(Messages.get(SkeletonKey.class, "discard"));
+		    }
+		}
 
 	    // Bundle 저장/복원 키 이름(문자열)
 	    public static final String IRON_NEEDED = "iron_needed";
