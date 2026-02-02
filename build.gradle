@@ -20,9 +20,9 @@ allprojects {
 
         /****버전관리를 위해 추가함*******/
         spdVersionName = '3.3.4'      // 베이스(SPD) 버전
-        rpdVersionName = '3.43.0'     //  모드(RPD) 버전
+        rpdVersionName = '3.43.1'     //  모드(RPD) 버전
 
-        appVersionCode = 890 //base_v3.4.0_Re_v3.43.0
+        appVersionCode = 891 //base_v3.4.0_Re_v3.43.1
         appShortVersionName = spdVersionName   // iOS 요구사항
         appVersionName = "SPD_v${spdVersionName} RPD_v${rpdVersionName}"
         /**-----------------------**/
