@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
@@ -114,7 +115,7 @@ public class StatusPane extends Component {
 				Camera.main.panTo( Dungeon.hero.sprite.center(), 5f );
 				GameScene.show( new WndHero() );
 			}
-			
+
 			@Override
 			public GameAction keyAction() {
 				return SPDAction.HERO_INFO;
@@ -282,7 +283,7 @@ public class StatusPane extends Component {
 
 		counter.point(busy.center());
 	}
-	
+
 	private static final int[] warningColors = new int[]{0x660000, 0xCC0000, 0x660000};
 
 	private int oldHP = 0;
@@ -292,46 +293,81 @@ public class StatusPane extends Component {
 	@Override
 	public void update() {
 		super.update();
-		
-		int health = Dungeon.hero.HP;
-		int shield = Dungeon.hero.shielding();
-		int max = Dungeon.hero.HT;
 
-		if (!Dungeon.hero.isAlive()) {
-			avatar.tint(0x000000, 0.5f);
-		} else if ((health/(float)max) < 0.334f) {
-			warning += Game.elapsed * 5f *(0.4f - (health/(float)max));
-			warning %= 1f;
-			avatar.tint(ColorMath.interpolate(warning, warningColors), 0.5f );
-		} else if (talentBlink > 0.33f){ //stops early so it doesn't end in the middle of a blink
-			talentBlink -= Game.elapsed;
-			avatar.tint(1, 1, 0, (float)Math.abs(Math.cos(talentBlink*FLASH_RATE))/2f);
-		} else {
+		// ---------------------------------------------------------
+		// NO_HP_UI 챌린지: 영웅 HP/실드/텍스트 숨김 + 저체력 경고도 차단
+		// (저체력 경고가 남아있으면 색 변화로 HP를 추론할 수 있음)
+		// ---------------------------------------------------------
+		final boolean hideHP = Dungeon.isChallenged(Challenges.NO_HP_UI);
+
+		if (hideHP) {
+			// HP 바/실드바/텍스트 완전 비활성화
+			hp.visible = hp.active = false;
+			shieldHP.visible = shieldHP.active = false;
+			hpText.visible = false;
+
+			// 혹시라도 남아있는 스케일을 0으로
+			hp.scale.x = 0f;
+			shieldHP.scale.x = 0f;
+
+			// 저체력 경고용 상태값 초기화
+			warning = 0f;
 			avatar.resetColor();
-		}
 
-		float healthPercent = health/(float)max;
-		float shieldPercent = shield/(float)max;
+			// hpText 내용 업데이트/측정도 안 함 (남아있을 이유 없음)
+			oldHP = oldShield = oldMax = 0;
 
-		if (healthPercent + shieldPercent > 1f){
-			float excess = healthPercent + shieldPercent;
-			healthPercent /= excess;
-			shieldPercent /= excess;
-		}
+		} else {
 
-		hp.scale.x = healthPercent;
-		shieldHP.scale.x = healthPercent + shieldPercent;
+			int health = Dungeon.hero.HP;
+			int shield = Dungeon.hero.shielding();
+			int max = Dungeon.hero.HT;
 
-		if (oldHP != health || oldShield != shield || oldMax != max){
-			if (shield <= 0) {
-				hpText.text(health + "/" + max);
+			if (!Dungeon.hero.isAlive()) {
+				avatar.tint(0x000000, 0.5f);
+			} else if ((health/(float)max) < 0.334f) {
+				warning += Game.elapsed * 5f *(0.4f - (health/(float)max));
+				warning %= 1f;
+				avatar.tint(ColorMath.interpolate(warning, warningColors), 0.5f );
+			} else if (talentBlink > 0.33f){ //stops early so it doesn't end in the middle of a blink
+				talentBlink -= Game.elapsed;
+				avatar.tint(1, 1, 0, (float)Math.abs(Math.cos(talentBlink*FLASH_RATE))/2f);
 			} else {
-				hpText.text(health + "+" + shield + "/" + max);
+				avatar.resetColor();
 			}
-			oldHP = health;
-			oldShield = shield;
-			oldMax = max;
+
+			float healthPercent = health/(float)max;
+			float shieldPercent = shield/(float)max;
+
+			if (healthPercent + shieldPercent > 1f){
+				float excess = healthPercent + shieldPercent;
+				healthPercent /= excess;
+				shieldPercent /= excess;
+			}
+
+			// HP바 표시
+			hp.visible = hp.active = true;
+			shieldHP.visible = shieldHP.active = true;
+			hpText.visible = true;
+
+			hp.scale.x = healthPercent;
+			shieldHP.scale.x = healthPercent + shieldPercent;
+
+			if (oldHP != health || oldShield != shield || oldMax != max){
+				if (shield <= 0) {
+					hpText.text(health + "/" + max);
+				} else {
+					hpText.text(health + "+" + shield + "/" + max);
+				}
+				oldHP = health;
+				oldShield = shield;
+				oldMax = max;
+			}
 		}
+
+		// ---------------------------------------------------------
+		// 아래는 HP 숨김 여부와 무관하게 정상 업데이트 유지 (EXP/레벨/티어/카운터 등)
+		// ---------------------------------------------------------
 
 		if (large) {
 			exp.scale.x = (128 / exp.width) * Dungeon.hero.exp / Dungeon.hero.maxExp();

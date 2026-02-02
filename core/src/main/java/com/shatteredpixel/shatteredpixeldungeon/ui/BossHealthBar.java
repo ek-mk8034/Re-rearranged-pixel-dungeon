@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -61,7 +62,14 @@ public class BossHealthBar extends Component {
 
 	public BossHealthBar() {
 		super();
-		visible = active = (boss != null);
+
+		// NO_HP_UI 챌린지면 보스바는 항상 꺼둔다.
+		if (Dungeon.isChallenged(Challenges.NO_HP_UI)) {
+			visible = active = false;
+		} else {
+			visible = active = (boss != null);
+		}
+
 		instance = this;
 	}
 
@@ -166,6 +174,13 @@ public class BossHealthBar extends Component {
 	@Override
 	public void update() {
 		super.update();
+
+		// NO_HP_UI 챌린지면 보스바는 매 프레임 꺼버리고 업데이트도 중단
+		if (Dungeon.isChallenged(Challenges.NO_HP_UI)) {
+			visible = active = false;
+			return;
+		}
+
 		if (boss != null){
 			if (!boss.isAlive() || !Dungeon.level.mobs.contains(boss)){
 				boss = null;
@@ -220,11 +235,20 @@ public class BossHealthBar extends Component {
 		}
 		BossHealthBar.boss = boss;
 		bleed(false);
+
 		if (instance != null) {
 			ShatteredPixelDungeon.runOnRenderThread(new Callback() {
 				@Override
 				public void call() {
+
+					// NO_HP_UI 챌린지면 assignBoss가 호출돼도 보스바를 절대 켜지 않음
+					if (Dungeon.isChallenged(Challenges.NO_HP_UI)) {
+						instance.visible = instance.active = false;
+						return;
+					}
+
 					instance.visible = instance.active = true;
+
 					if (boss != null){
 						if (instance.large){
 							if (instance.skull != null){
@@ -247,7 +271,7 @@ public class BossHealthBar extends Component {
 			});
 		}
 	}
-	
+
 	public static boolean isAssigned(){
 		return boss != null && boss.isAlive() && Dungeon.level.mobs.contains(boss);
 	}

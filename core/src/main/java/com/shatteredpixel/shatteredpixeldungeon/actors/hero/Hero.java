@@ -2540,26 +2540,35 @@ public class Hero extends Char {
 			buff(Challenge.DuelParticipant.class).addDamage(effectiveDamage);
 		}
 
-		//flash red when hit for serious damage.
-		float percentDMG = effectiveDamage / (float)preHP; //percent of current HP that was taken
-		float percentHP = 1 - ((HT - postHP) / (float)HT); //percent health after damage was taken
-		// The flash intensity increases primarily based on damage taken and secondarily on missing HP.
-		float flashIntensity = 0.25f * (percentDMG * percentDMG) / percentHP;
-		//if the intensity is very low don't flash at all
-		if (flashIntensity >= 0.05f){
-			flashIntensity = Math.min(1/3f, flashIntensity); //cap intensity at 1/3
-			GameScene.flash( (int)(0xFF*flashIntensity) << 16 );
-			if (isAlive()) {
-				if (flashIntensity >= 1/6f) {
-					Sample.INSTANCE.play(Assets.Sounds.HEALTH_CRITICAL, 1/3f + flashIntensity * 2f);
-				} else {
-					Sample.INSTANCE.play(Assets.Sounds.HEALTH_WARN, 1/3f + flashIntensity * 4f);
-				}
-				//hero gets interrupted on taking serious damage, regardless of any other factor
-				interrupt();
-				damageInterrupt = true;
-			}
+		// flash red when hit for serious damage
+		if (!Dungeon.isChallenged(Challenges.NO_HP_UI)) {
+
+		    float percentDMG = effectiveDamage / (float) preHP;
+		    float percentHP = 1 - ((HT - postHP) / (float) HT);
+		    float flashIntensity = 0.25f * (percentDMG * percentDMG) / percentHP;
+
+		    if (flashIntensity >= 0.05f) {
+		        flashIntensity = Math.min(1 / 3f, flashIntensity);
+		        GameScene.flash((int) (0xFF * flashIntensity) << 16);
+
+		        if (isAlive()) {
+		            if (flashIntensity >= 1 / 6f) {
+		                Sample.INSTANCE.play(
+		                    Assets.Sounds.HEALTH_CRITICAL,
+		                    1 / 3f + flashIntensity * 2f
+		                );
+		            } else {
+		                Sample.INSTANCE.play(
+		                    Assets.Sounds.HEALTH_WARN,
+		                    1 / 3f + flashIntensity * 4f
+		                );
+		            }
+		            interrupt();
+		            damageInterrupt = true;
+		        }
+		    }
 		}
+
 	}
 	
 	public void checkVisibleMobs() {

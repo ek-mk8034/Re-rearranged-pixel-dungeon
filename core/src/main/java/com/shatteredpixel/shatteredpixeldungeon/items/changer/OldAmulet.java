@@ -519,7 +519,6 @@ public class OldAmulet extends Item {
                 case HUNTRESS:
                     return item instanceof SpiritBow;
                 case DUELIST:
-                case SAMURAI:
                     return item instanceof MeleeWeapon && !(item instanceof MagesStaff) && !(item instanceof Gun);
                 case GUNNER:
                     return item instanceof Gun;
