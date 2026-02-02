@@ -625,20 +625,21 @@ public class Badges {
 	}
 	
 	public static void validateItemLevelAquired( Item item ) {
-		
-		// This method should be called:
-		// 1) When an item is obtained (Item.collect)
-		// 2) When an item is upgraded (ScrollOfUpgrade, ScrollOfWeaponUpgrade, ShortSword, WandOfMagicMissile)
-		// 3) When an item is identified
 
-		// Note that artifacts should never trigger this badge as they are alternatively upgraded
-		if (!item.levelKnown || item instanceof Artifact) {
-			return;
-		}
+	    // This method should be called:
+	    // 1) When an item is obtained (Item.collect)
+	    // 2) When an item is upgraded (ScrollOfUpgrade, ScrollOfWeaponUpgrade, ShortSword, WandOfMagicMissile)
+	    // 3) When an item is identified
 
-		if (item instanceof MeleeWeapon){
-			validateDuelistUnlock();
-		}
+	    // 듀얼리스트 해금 체크는 levelKnown 필요 없음 → return 전에 실행
+	    if (item instanceof MeleeWeapon){
+	        validateDuelistUnlock();
+	    }
+
+	    // Note that artifacts should never trigger this badge as they are alternatively upgraded
+	    if (!item.levelKnown || item instanceof Artifact) {
+	        return;
+	    }
 		
 		Badge badge = null;
 		if (!local.contains( Badge.ITEM_LEVEL_1 ) && item.level() >= 3) {

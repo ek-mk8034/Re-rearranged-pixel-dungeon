@@ -565,119 +565,263 @@ public class SkeletonKey extends Artifact {
 
 	public static class KeyReplacementTracker extends Buff {
 
-		public int[] ironKeysNeeded, goldenKeysNeeded, crystalKeysNeeded;
+	    /**
+	     * depth(층)별로 “해당 층에서 아직 필요한 키 개수”를 트래킹하는 배열들.
+	     * - ironKeysNeeded[depth]   : LOCKED_DOOR(철문) + 관련 잠금에 필요한 철 열쇠 수
+	     * - goldenKeysNeeded[depth] : LOCKED_CHEST(금 상자)에 필요한 황금 열쇠 수
+	     * - crystalKeysNeeded[depth]: CRYSTAL_DOOR/CRYSTAL_CHEST(수정 잠금)에 필요한 수정 열쇠 수
+	     *
+	     * SPD 기본은 25층까지라 길이 26(0~25)로 고정해도 됐지만,
+	     * 너의 모드는 30층 이상이 존재하므로 depth 인덱싱 전에 동적 확장이 필요함.
+	     */
+	    public int[] ironKeysNeeded, goldenKeysNeeded, crystalKeysNeeded;
 
-		{
-			revivePersists = true;
-			ironKeysNeeded = new int[26];
-			Arrays.fill(ironKeysNeeded, -1);
-			goldenKeysNeeded = new int[26];
-			Arrays.fill(goldenKeysNeeded, -1);
-			crystalKeysNeeded = new int[26];
-			Arrays.fill(crystalKeysNeeded, -1);
-		}
+	    {
+	        // revivePersists = true : 부활(ankh 등) 이후에도 버프(트래커)를 유지해서
+	        // "키 정리 상태"가 끊기지 않도록 하는 설정.
+	        revivePersists = true;
 
-		public void setupKeysForDepth(){
-			ironKeysNeeded[Dungeon.depth] = 0;
-			goldenKeysNeeded[Dungeon.depth] = 0;
-			crystalKeysNeeded[Dungeon.depth] = 0;
+	        // 기본 초기 크기는 "SPD 기준 26" 정도로 시작해도 되지만,
+	        // 핵심은 접근 직전에 ensureCapacity(depth)로 확장하는 것.
+	        ironKeysNeeded   = new int[31];
+	        goldenKeysNeeded = new int[31];
+	        crystalKeysNeeded= new int[31];
 
-			for (Heap h : Dungeon.level.heaps.valueList()){
-				if (h.type == Heap.Type.LOCKED_CHEST){
-					goldenKeysNeeded[Dungeon.depth]++;
-				} else if (h.type == Heap.Type.CRYSTAL_CHEST){
-					crystalKeysNeeded[Dungeon.depth]++;
-				}
-			}
+	        // -1은 “아직 이 층에 대해 키 필요량을 계산하지 않았다”라는 sentinel 값.
+	        Arrays.fill(ironKeysNeeded, -1);
+	        Arrays.fill(goldenKeysNeeded, -1);
+	        Arrays.fill(crystalKeysNeeded, -1);
+	    }
 
-			for (int i = 0; i < Dungeon.level.length(); i++){
-				if (Dungeon.level.map[i] == Terrain.LOCKED_DOOR){
-					ironKeysNeeded[Dungeon.depth]++;
-				} else if (Dungeon.level.map[i] == Terrain.CRYSTAL_DOOR){
-					crystalKeysNeeded[Dungeon.depth]++;
-				}
-			}
-		}
+	    /**
+	     * 배열을 depth 인덱스까지 접근 가능하도록 보장한다.
+	     * 예: depth=30이면 최소 길이 31이 필요 (0..30)
+	     *
+	     * 또한 새로 늘어난 구간은 -1로 채워 “미계산” 상태로 유지한다.
+	     */
+	    private void ensureCapacity(int depth) {
 
-		//used if a level was reset, e.g. via unblessed ankh vs. boss
-		public void clearDepth(){
-			ironKeysNeeded[Dungeon.depth] = -1;
-			goldenKeysNeeded[Dungeon.depth] = -1;
-			crystalKeysNeeded[Dungeon.depth] = -1;
-		}
+	        // depth가 음수로 들어오는 비정상 상황 방어
+	        if (depth < 0) depth = 0;
 
-		public void processIronLockOpened(){
-			if (ironKeysNeeded[Dungeon.depth] == -1){
-				setupKeysForDepth();
-			}
-			ironKeysNeeded[Dungeon.depth] -= 1;
-			processExcessKeys();
-		}
+	        // depth 인덱스 포함하려면 최소 depth+1 길이가 필요
+	        final int needLen = depth + 1;
 
-		public void processGoldLockOpened(){
-			if (goldenKeysNeeded[Dungeon.depth] == -1){
-				setupKeysForDepth();
-			}
-			goldenKeysNeeded[Dungeon.depth] -= 1;
-			processExcessKeys();
-		}
+	        // 혹시 배열이 null인 상황(이상/구버전 세이브) 대비
+	        if (ironKeysNeeded == null) {
+	            ironKeysNeeded = new int[needLen];
+	            Arrays.fill(ironKeysNeeded, -1);
+	        }
+	        if (goldenKeysNeeded == null) {
+	            goldenKeysNeeded = new int[needLen];
+	            Arrays.fill(goldenKeysNeeded, -1);
+	        }
+	        if (crystalKeysNeeded == null) {
+	            crystalKeysNeeded = new int[needLen];
+	            Arrays.fill(crystalKeysNeeded, -1);
+	        }
 
-		public void processCrystalLockOpened(){
-			if (crystalKeysNeeded[Dungeon.depth] == -1){
-				setupKeysForDepth();
-			}
-			crystalKeysNeeded[Dungeon.depth] -= 1;
-			processExcessKeys();
-		}
+	        // 필요 길이보다 짧으면 copyOf로 확장 후, 확장된 부분을 -1로 채움
+	        if (ironKeysNeeded.length < needLen) {
+	            int oldLen = ironKeysNeeded.length;
+	            ironKeysNeeded = Arrays.copyOf(ironKeysNeeded, needLen);
+	            Arrays.fill(ironKeysNeeded, oldLen, needLen, -1);
+	        }
 
-		public void processExcessKeys(){
-			int keysNeeded = ironKeysNeeded[Dungeon.depth];
-			boolean removed = false;
-			if (keysNeeded >= 0) {
-				while (Notes.keyCount(new IronKey(Dungeon.depth)) > keysNeeded) {
-					Notes.remove(new IronKey(Dungeon.depth));
-					removed = true;
-				}
-			}
-			keysNeeded = goldenKeysNeeded[Dungeon.depth];
-			if (keysNeeded >= 0) {
-				while (Notes.keyCount(new GoldenKey(Dungeon.depth)) > keysNeeded) {
-					Notes.remove(new GoldenKey(Dungeon.depth));
-					removed = true;
-				}
-			}
-			keysNeeded = crystalKeysNeeded[Dungeon.depth];
-			if (keysNeeded >= 0) {
-				while (Notes.keyCount(new CrystalKey(Dungeon.depth)) > keysNeeded) {
-					Notes.remove(new CrystalKey(Dungeon.depth));
-					removed = true;
-				}
-			}
-			if (removed){
-				GameScene.updateKeyDisplay();
-				GLog.i(Messages.get(SkeletonKey.class, "discard"));
-			}
-		}
+	        if (goldenKeysNeeded.length < needLen) {
+	            int oldLen = goldenKeysNeeded.length;
+	            goldenKeysNeeded = Arrays.copyOf(goldenKeysNeeded, needLen);
+	            Arrays.fill(goldenKeysNeeded, oldLen, needLen, -1);
+	        }
 
-		public static String IRON_NEEDED = "iron_needed";
-		public static String GOLDEN_NEEDED = "golden_needed";
-		public static String CRYSTAL_NEEDED = "crystal_needed";
+	        if (crystalKeysNeeded.length < needLen) {
+	            int oldLen = crystalKeysNeeded.length;
+	            crystalKeysNeeded = Arrays.copyOf(crystalKeysNeeded, needLen);
+	            Arrays.fill(crystalKeysNeeded, oldLen, needLen, -1);
+	        }
+	    }
 
-		@Override
-		public void storeInBundle(Bundle bundle) {
-			super.storeInBundle(bundle);
-			bundle.put(IRON_NEEDED, ironKeysNeeded);
-			bundle.put(GOLDEN_NEEDED, goldenKeysNeeded);
-			bundle.put(CRYSTAL_NEEDED, crystalKeysNeeded);
-		}
+	    /**
+	     * 현재 depth(층)의 “필요 키 개수”를 맵/힙(상자)에서 다시 계산해서 기록한다.
+	     *
+	     * 이 메서드는:
+	     * - 해당 층의 문/상자 잠금 수를 세어 필요 키 개수를 채움
+	     * - 이후 SkeletonKey가 잠금을 열 때마다 -1씩 감소
+	     */
+	    public void setupKeysForDepth() {
 
-		@Override
-		public void restoreFromBundle(Bundle bundle) {
-			super.restoreFromBundle(bundle);
-			ironKeysNeeded = bundle.getIntArray(IRON_NEEDED);
-			goldenKeysNeeded = bundle.getIntArray(GOLDEN_NEEDED);
-			crystalKeysNeeded = bundle.getIntArray(CRYSTAL_NEEDED);
-		}
+	        // depth 인덱싱 전에 배열 길이 보장(26~30층에서 터지는 문제 해결 핵심)
+	        ensureCapacity(Dungeon.depth);
 
+	        // 이 층에 대해 “계산 완료” 상태로 만들기 위해 0부터 세팅
+	        ironKeysNeeded[Dungeon.depth] = 0;
+	        goldenKeysNeeded[Dungeon.depth] = 0;
+	        crystalKeysNeeded[Dungeon.depth] = 0;
+
+	        // 1) 상자(Heap) 기반 잠금 카운트
+	        for (Heap h : Dungeon.level.heaps.valueList()) {
+	            if (h.type == Heap.Type.LOCKED_CHEST) {
+	                // 황금 상자 = 황금 열쇠 필요
+	                goldenKeysNeeded[Dungeon.depth]++;
+	            } else if (h.type == Heap.Type.CRYSTAL_CHEST) {
+	                // 수정 상자 = 수정 열쇠 필요
+	                crystalKeysNeeded[Dungeon.depth]++;
+	            }
+	        }
+
+	        // 2) 타일(문) 기반 잠금 카운트
+	        for (int i = 0; i < Dungeon.level.length(); i++) {
+	            if (Dungeon.level.map[i] == Terrain.LOCKED_DOOR) {
+	                // 잠긴 문 = 철 열쇠 필요
+	                ironKeysNeeded[Dungeon.depth]++;
+	            } else if (Dungeon.level.map[i] == Terrain.CRYSTAL_DOOR) {
+	                // 수정 문 = 수정 열쇠 필요
+	                crystalKeysNeeded[Dungeon.depth]++;
+	            }
+	        }
+	    }
+
+	    /**
+	     * 레벨이 “리셋”될 때(예: 보스층에서 unblessed ankh 등) 호출.
+	     * - 이 층의 필요 키 개수를 다시 “미계산(-1)” 상태로 돌려놓음
+	     * - 이후 다시 setupKeysForDepth()로 재계산하도록 유도
+	     */
+	    public void clearDepth() {
+	        ensureCapacity(Dungeon.depth);
+
+	        ironKeysNeeded[Dungeon.depth] = -1;
+	        goldenKeysNeeded[Dungeon.depth] = -1;
+	        crystalKeysNeeded[Dungeon.depth] = -1;
+	    }
+
+	    /**
+	     * 철문/잠금(LOCKED_DOOR)을 SkeletonKey로 열었을 때 호출.
+	     * - 필요량이 미계산(-1)이면 먼저 setupKeysForDepth()로 계산
+	     * - 해당 타입 필요량을 1 감소
+	     * - 초과 보유 키가 있으면 Notes에서 제거(정리)
+	     */
+	    public void processIronLockOpened() {
+	        ensureCapacity(Dungeon.depth);
+
+	        if (ironKeysNeeded[Dungeon.depth] == -1) {
+	            setupKeysForDepth();
+	        }
+
+	        ironKeysNeeded[Dungeon.depth] -= 1;
+	        processExcessKeys();
+	    }
+
+	    /**
+	     * 황금 상자(LOCKED_CHEST)를 SkeletonKey로 열었을 때 호출.
+	     */
+	    public void processGoldLockOpened() {
+	        ensureCapacity(Dungeon.depth);
+
+	        if (goldenKeysNeeded[Dungeon.depth] == -1) {
+	            setupKeysForDepth();
+	        }
+
+	        goldenKeysNeeded[Dungeon.depth] -= 1;
+	        processExcessKeys();
+	    }
+
+	    /**
+	     * 수정 잠금(CRYSTAL_DOOR/CRYSTAL_CHEST)을 SkeletonKey로 열었을 때 호출.
+	     */
+	    public void processCrystalLockOpened() {
+	        ensureCapacity(Dungeon.depth);
+
+	        if (crystalKeysNeeded[Dungeon.depth] == -1) {
+	            setupKeysForDepth();
+	        }
+
+	        crystalKeysNeeded[Dungeon.depth] -= 1;
+	        processExcessKeys();
+	    }
+
+	    /**
+	     * “이 층에서 남아있어야 하는 키 개수(keysNeeded)”보다
+	     * Notes에 기록된 키가 더 많으면(= 초과 보유) 자동으로 버린다.
+	     *
+	     * 왜 필요한가?
+	     * - SkeletonKey가 잠금을 열면 실제로는 열쇠를 소비하지 않았을 수 있는데,
+	     *   이때 플레이어가 키를 계속 들고 있으면 “필요 이상 키”가 남게 됨.
+	     * - 그래서 Notes(키 보유 기록)에서 초과분을 정리해 UI/일관성을 맞춤.
+	     */
+	    public void processExcessKeys() {
+	        ensureCapacity(Dungeon.depth);
+
+	        boolean removed = false;
+
+	        // 1) 철 열쇠 초과 제거
+	        int keysNeeded = ironKeysNeeded[Dungeon.depth];
+	        if (keysNeeded >= 0) {
+	            while (Notes.keyCount(new IronKey(Dungeon.depth)) > keysNeeded) {
+	                Notes.remove(new IronKey(Dungeon.depth));
+	                removed = true;
+	            }
+	        }
+
+	        // 2) 황금 열쇠 초과 제거
+	        keysNeeded = goldenKeysNeeded[Dungeon.depth];
+	        if (keysNeeded >= 0) {
+	            while (Notes.keyCount(new GoldenKey(Dungeon.depth)) > keysNeeded) {
+	                Notes.remove(new GoldenKey(Dungeon.depth));
+	                removed = true;
+	            }
+	        }
+
+	        // 3) 수정 열쇠 초과 제거
+	        keysNeeded = crystalKeysNeeded[Dungeon.depth];
+	        if (keysNeeded >= 0) {
+	            while (Notes.keyCount(new CrystalKey(Dungeon.depth)) > keysNeeded) {
+	                Notes.remove(new CrystalKey(Dungeon.depth));
+	                removed = true;
+	            }
+	        }
+
+	        // 실제 제거가 있었다면 UI 갱신 + 로그 출력
+	        if (removed) {
+	            GameScene.updateKeyDisplay();
+	            GLog.i(Messages.get(SkeletonKey.class, "discard"));
+	        }
+	    }
+
+	    // Bundle 저장/복원 키 이름(문자열)
+	    public static final String IRON_NEEDED = "iron_needed";
+	    public static final String GOLDEN_NEEDED = "golden_needed";
+	    public static final String CRYSTAL_NEEDED = "crystal_needed";
+
+	    /**
+	     * 세이브 저장: 현재 배열 상태를 bundle에 넣는다.
+	     */
+	    @Override
+	    public void storeInBundle(Bundle bundle) {
+	        super.storeInBundle(bundle);
+
+	        // 배열 전체를 저장(층별 필요 키 상태)
+	        bundle.put(IRON_NEEDED, ironKeysNeeded);
+	        bundle.put(GOLDEN_NEEDED, goldenKeysNeeded);
+	        bundle.put(CRYSTAL_NEEDED, crystalKeysNeeded);
+	    }
+
+	    /**
+	     * 세이브 복원: 저장된 배열을 꺼내온다.
+	     * - 구버전 세이브는 배열 길이가 26일 수 있으므로,
+	     *   restore 후 ensureCapacity(Dungeon.depth)로 현재 층 접근이 안전하도록 확장한다.
+	     */
+	    @Override
+	    public void restoreFromBundle(Bundle bundle) {
+	        super.restoreFromBundle(bundle);
+
+	        ironKeysNeeded = bundle.getIntArray(IRON_NEEDED);
+	        goldenKeysNeeded = bundle.getIntArray(GOLDEN_NEEDED);
+	        crystalKeysNeeded = bundle.getIntArray(CRYSTAL_NEEDED);
+
+	        // 복원 직후 현재 depth까지는 최소한 안전하게 확장
+	        // (나중에 더 깊은 층으로 내려가면 process*에서 다시 ensureCapacity가 호출됨)
+	        ensureCapacity(Dungeon.depth);
+	    }
 	}
+
 }

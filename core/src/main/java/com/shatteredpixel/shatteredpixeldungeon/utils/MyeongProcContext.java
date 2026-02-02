@@ -2,7 +2,12 @@ package com.shatteredpixel.shatteredpixeldungeon.utils;
 
 public final class MyeongProcContext {
 
-    private static final ThreadLocal<Boolean> FORCE = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Boolean> FORCE = new ThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     private MyeongProcContext() {}
 

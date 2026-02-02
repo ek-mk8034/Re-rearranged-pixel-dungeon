@@ -38,6 +38,14 @@ task updateRoboVMProps(){
 
 
     file("robovm.properties").withWriter { props.store(it, "Dynamically generated, do not commit to version control!") }
+
+    // ---- Debug / logging (only for local debugging; remove if you want) ----
+    props.setProperty('robovm.debug', 'true')
+    props.setProperty('robovm.verbose', 'true')
+    // iOS device logs sometimes need this to see more detail
+    props.setProperty('robovm.log', 'debug')
+
+
 }
 
 build.dependsOn updateRoboVMProps
@@ -63,3 +71,4 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-ios"
     implementation "com.badlogicgames.gdx-controllers:gdx-controllers-ios:$gdxControllersVersion"
 }
+
