@@ -139,6 +139,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingSt
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.DeviceCompat;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.FireMaker;
 //import com.shatteredpixel.shatteredpixeldungeon.items.changer.OldAmulet;
 
 public enum HeroClass {
@@ -194,6 +195,7 @@ public enum HeroClass {
 			new TengusMask().collect();
 			new KingsCrown().collect();
 			new OldAmulet().collect();
+			new FireMaker().identify().quantity(20).collect();
 //			new BrokenShield().collect();
 //			new PinkGem().collect();
 //			new Ankh().collect();

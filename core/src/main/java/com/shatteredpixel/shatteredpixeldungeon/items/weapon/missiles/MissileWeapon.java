@@ -330,53 +330,91 @@ abstract public class MissileWeapon extends Weapon {
 
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
-		if (attacker == Dungeon.hero && Random.Int(3) < Dungeon.hero.pointsInTalent(Talent.SHARED_ENCHANTMENT)){
-			SpiritBow bow = Dungeon.hero.belongings.getItem(SpiritBow.class);
-			if (bow != null && bow.enchantment != null && Dungeon.hero.buff(MagicImmune.class) == null) {
-				damage = bow.enchantment.proc(this, attacker, defender, damage);
-			}
-		}
 
-		if ((cursed || hasCurseEnchant()) && !cursedKnown){
-			GLog.n(Messages.get(this, "curse_discover"));
-		}
-		cursedKnown = true;
-		if (parent != null) parent.cursedKnown = true;
+	    // ---------------------------------------------------------
+	    // 0) Shared Enchantment (SpiritBow enchant proc sharing)
+	    // ---------------------------------------------------------
+	    if (attacker == Dungeon.hero && Random.Int(3) < Dungeon.hero.pointsInTalent(Talent.SHARED_ENCHANTMENT)){
+	        SpiritBow bow = Dungeon.hero.belongings.getItem(SpiritBow.class);
+	        if (bow != null && bow.enchantment != null && Dungeon.hero.buff(MagicImmune.class) == null) {
+	            damage = bow.enchantment.proc(this, attacker, defender, damage);
+	        }
+	    }
 
-		//instant ID with the right talent
-		if (attacker == Dungeon.hero && Dungeon.hero.pointsInTalent(Talent.SURVIVALISTS_INTUITION) == 2 && !(this instanceof Gun.Bullet)){
-			usesLeftToID = Math.min(usesLeftToID, 0);
-			availableUsesToID =  Math.max(usesLeftToID, 0);
-		}
+	    // ---------------------------------------------------------
+	    // 1) Curse discovery message should appear only once per "real" weapon.
+	    //
+	    // Problem:
+	    // - Many projectile shots create a NEW MissileWeapon instance each time
+	    //   (Arrow, Bullet, SpiritArrow, etc.)
+	    // - That new instance starts with cursedKnown = false, so message repeats.
+	    //
+	    // Fix:
+	    // - Use "source" (parent if exists, otherwise this) as the single truth.
+	    // - Print the discovery message only if source.cursedKnown is false.
+	    // - Mark both source and this as cursedKnown = true for safety.
+	    // ---------------------------------------------------------
+	    MissileWeapon source = (parent != null) ? parent : this;
 
-		int result = super.proc(attacker, defender, damage);
+	    if ((cursed || hasCurseEnchant()) && !source.cursedKnown){
+	        GLog.n(Messages.get(this, "curse_discover"));
+	    }
 
-		//handle ID progress over parent/child
-		if (parent != null && parent.usesLeftToID > usesLeftToID){
-			float diff = parent.usesLeftToID - usesLeftToID;
-			parent.usesLeftToID -= diff;
-			parent.availableUsesToID -= diff;
-			if (usesLeftToID <= 0) {
-				if (ShardOfOblivion.passiveIDDisabled()){
-					parent.setIDReady();
-				} else {
-					parent.identify();
-				}
-			}
-		} else if (parent != null && isIdentified() && !parent.isIdentified()){
-			parent.identify();
-		}
+	    // Mark as known on both (source is the important one; this is for safety)
+	    source.cursedKnown = true;
+	    cursedKnown = true;
 
-		if (!isIdentified() && ShardOfOblivion.passiveIDDisabled()){
-			Buff.prolong(curUser, ShardOfOblivion.ThrownUseTracker.class, 50f);
-		}
+	    // ---------------------------------------------------------
+	    // 2) Instant ID with the right talent (same logic as before)
+	    // ---------------------------------------------------------
+	    if (attacker == Dungeon.hero
+	            && Dungeon.hero.pointsInTalent(Talent.SURVIVALISTS_INTUITION) == 2
+	            && !(this instanceof Gun.Bullet)){
+	        usesLeftToID = Math.min(usesLeftToID, 0);
+	        availableUsesToID = Math.max(usesLeftToID, 0);
+	    }
 
-        SharpShooterBuff.SharpShootingCoolDown.missileHit(attacker);
+	    // ---------------------------------------------------------
+	    // 3) Normal enchant/curse procs (base Weapon.proc)
+	    // ---------------------------------------------------------
+	    int result = super.proc(attacker, defender, damage);
 
-        SharpShooterBuff.channel(attacker, defender, damage);
+	    // ---------------------------------------------------------
+	    // 4) Handle ID progress shared across parent/child
+	    // (kept identical to your previous logic, just left as-is)
+	    // ---------------------------------------------------------
+	    if (parent != null && parent.usesLeftToID > usesLeftToID){
+	        float diff = parent.usesLeftToID - usesLeftToID;
+	        parent.usesLeftToID -= diff;
+	        parent.availableUsesToID -= diff;
+	        if (usesLeftToID <= 0) {
+	            if (ShardOfOblivion.passiveIDDisabled()){
+	                parent.setIDReady();
+	            } else {
+	                parent.identify();
+	            }
+	        }
+	    } else if (parent != null && isIdentified() && !parent.isIdentified()){
+	        parent.identify();
+	    }
 
-		return result;
+	    // ---------------------------------------------------------
+	    // 5) ShardOfOblivion passive ID tracking
+	    // ---------------------------------------------------------
+	    if (!isIdentified() && ShardOfOblivion.passiveIDDisabled()){
+	        Buff.prolong(curUser, ShardOfOblivion.ThrownUseTracker.class, 50f);
+	    }
+
+	    // ---------------------------------------------------------
+	    // 6) Sharpshooter hooks
+	    // ---------------------------------------------------------
+	    SharpShooterBuff.SharpShootingCoolDown.missileHit(attacker);
+	    SharpShooterBuff.channel(attacker, defender, damage);
+
+	    return result;
 	}
+
+
 
 	@Override
 	public Item virtual() {

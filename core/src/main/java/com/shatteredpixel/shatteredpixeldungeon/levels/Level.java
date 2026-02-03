@@ -863,104 +863,200 @@ public abstract class Level implements Bundlable {
 	}
 
 	public void buildFlagMaps() {
-		
-		for (int i=0; i < length(); i++) {
-			int flags = Terrain.flags[map[i]];
-			passable[i]		= (flags & Terrain.PASSABLE) != 0;
-			losBlocking[i]	= (flags & Terrain.LOS_BLOCKING) != 0;
-			flamable[i]		= (flags & Terrain.FLAMABLE) != 0;
-			secret[i]		= (flags & Terrain.SECRET) != 0;
-			solid[i]		= (flags & Terrain.SOLID) != 0;
-			avoid[i]		= (flags & Terrain.AVOID) != 0;
-			water[i]		= (flags & Terrain.LIQUID) != 0;
-			pit[i]			= (flags & Terrain.PIT) != 0;
-		}
 
-		for (Blob b : blobs.values()){
-			b.onBuildFlagMaps(this);
-		}
-		
-		int lastRow = length() - width();
-		for (int i=0; i < width(); i++) {
-			passable[i] = avoid[i] = false;
-			losBlocking[i] = solid[i] = true;
-			passable[lastRow + i] = avoid[lastRow + i] = false;
-			losBlocking[lastRow + i] = solid[lastRow + i] = true;
-		}
-		for (int i=width(); i < lastRow; i += width()) {
-			passable[i] = avoid[i] = false;
-			losBlocking[i] = solid[i] = true;
-			passable[i + width()-1] = avoid[i + width()-1] = false;
-			losBlocking[i + width()-1] = solid[i + width()-1] = true;
-		}
+	    // 1) 기본: Terrain.flags[]를 타일별 boolean map으로 변환
+	    for (int i = 0; i < length(); i++) {
+	        int flags = Terrain.flags[map[i]];
+	        passable[i]   = (flags & Terrain.PASSABLE) != 0;
+	        losBlocking[i]= (flags & Terrain.LOS_BLOCKING) != 0;
+	        flamable[i]   = (flags & Terrain.FLAMABLE) != 0;
+	        secret[i]     = (flags & Terrain.SECRET) != 0;
+	        solid[i]      = (flags & Terrain.SOLID) != 0;
+	        avoid[i]      = (flags & Terrain.AVOID) != 0;
+	        water[i]      = (flags & Terrain.LIQUID) != 0;
+	        pit[i]        = (flags & Terrain.PIT) != 0;
+	    }
 
-		//an open space is large enough to fit large mobs. A space is open when it is not solid
-		// and there is an open corner with both adjacent cells opens
-		for (int i=0; i < length(); i++) {
-			if (solid[i]){
-				openSpace[i] = false;
-			} else {
-				for (int j = 1; j < PathFinder.CIRCLE8.length; j += 2){
-					if (solid[i+PathFinder.CIRCLE8[j]]) {
-						openSpace[i] = false;
-					} else if (!solid[i+PathFinder.CIRCLE8[(j+1)%8]]
-							&& !solid[i+PathFinder.CIRCLE8[(j+2)%8]]){
-						openSpace[i] = true;
-						break;
-					}
-				}
-			}
-		}
+	    // 2) Blob이 지형 플래그를 수정할 수 있는 경우 반영
+	    for (Blob b : blobs.values()) {
+	        b.onBuildFlagMaps(this);
+	    }
 
+	    // 3) 가장자리(border)는 "맵 밖" 취급: 이동/시야/불/물/함정 영향이 안 생기게 강제 고정
+	    int lastRow = length() - width();
+
+	    // top + bottom
+	    for (int x = 0; x < width(); x++) {
+
+	        int t = x;               // top row cell
+	        int b = lastRow + x;     // bottom row cell
+
+	        // top
+	        passable[t] = avoid[t] = false;
+	        losBlocking[t] = solid[t] = true;
+	        flamable[t] = false;
+	        secret[t] = false;
+	        water[t] = false;
+	        pit[t] = false;
+
+	        // bottom
+	        passable[b] = avoid[b] = false;
+	        losBlocking[b] = solid[b] = true;
+	        flamable[b] = false;
+	        secret[b] = false;
+	        water[b] = false;
+	        pit[b] = false;
+	    }
+
+	    // left + right
+	    for (int y = 1; y < height() - 1; y++) {
+	        int l = y * width();           // left column
+	        int r = y * width() + width() - 1; // right column
+
+	        passable[l] = avoid[l] = false;
+	        losBlocking[l] = solid[l] = true;
+	        flamable[l] = false;
+	        secret[l] = false;
+	        water[l] = false;
+	        pit[l] = false;
+
+	        passable[r] = avoid[r] = false;
+	        losBlocking[r] = solid[r] = true;
+	        flamable[r] = false;
+	        secret[r] = false;
+	        water[r] = false;
+	        pit[r] = false;
+	    }
+
+	    // 4) openSpace 계산:
+	    // 큰 몹(LARGE)이 설 수 있는 공간인지 판정.
+	    // "내가 solid가 아니고", 인접한 코너 방향에서 최소한의 여유가 있으면 true.
+	    for (int i = 0; i < length(); i++) {
+
+	        if (solid[i]) {
+	            openSpace[i] = false;
+	            continue;
+	        }
+
+	        boolean open = false;
+
+	        // PathFinder.CIRCLE8은 8방향 offset 배열.
+	        // 여기서는 "코너" 체크를 위해 홀수 인덱스(대각 사이 축방향)를 기준으로 본다.
+	        for (int j = 1; j < PathFinder.CIRCLE8.length; j += 2) {
+
+	            int a = i + PathFinder.CIRCLE8[j];
+	            int b = i + PathFinder.CIRCLE8[(j + 1) % 8];
+	            int c = i + PathFinder.CIRCLE8[(j + 2) % 8];
+
+	            // ✅ 핵심: 인덱스 범위 체크 (가장자리/코너에서 out-of-bounds 방지)
+	            if (a < 0 || a >= length || b < 0 || b >= length || c < 0 || c >= length) {
+	                continue;
+	            }
+
+	            if (solid[a]) {
+	                // 막혀있으면 이 코너는 불가능
+	                continue;
+	            }
+
+	            // 두 축방향 칸이 모두 열려있으면 큰 몹이 들어갈 여지가 있다고 판단
+	            if (!solid[b] && !solid[c]) {
+	                open = true;
+	                break;
+	            }
+	        }
+
+	        openSpace[i] = open;
+	    }
 	}
+
 
 	//updates open space both on the cell itself and adjacent cells
-	public void updateOpenSpace(int cell){
-		for (int i : PathFinder.NEIGHBOURS9) {
-			if (solid[cell+i]){
-				openSpace[cell+i] = false;
-			} else {
-				for (int j = 1; j < PathFinder.CIRCLE8.length; j += 2){
-					if (solid[cell+i+PathFinder.CIRCLE8[j]]) {
-						openSpace[cell+i] = false;
-					} else if (!solid[cell+i+PathFinder.CIRCLE8[(j+1)%8]]
-							&& !solid[cell+i+PathFinder.CIRCLE8[(j+2)%8]]){
-						openSpace[cell+i] = true;
-						break;
-					}
-				}
-			}
-		}
+	// updates openSpace for the cell and its neighbours (safe bounds)
+	public void updateOpenSpace(int cell) {
+
+	    for (int off : PathFinder.NEIGHBOURS9) {
+
+	        int i = cell + off;
+
+	        // ✅ 안전: 범위 밖이면 스킵
+	        if (i < 0 || i >= length()) continue;
+
+	        if (solid[i]) {
+	            openSpace[i] = false;
+	            continue;
+	        }
+
+	        boolean open = false;
+
+	        for (int j = 1; j < PathFinder.CIRCLE8.length; j += 2) {
+
+	            int a = i + PathFinder.CIRCLE8[j];
+	            int b = i + PathFinder.CIRCLE8[(j + 1) % 8];
+	            int c = i + PathFinder.CIRCLE8[(j + 2) % 8];
+
+	            // ✅ 안전: 범위 체크
+	            if (a < 0 || a >= length() || b < 0 || b >= length() || c < 0 || c >= length()) {
+	                continue;
+	            }
+
+	            if (!solid[a] && !solid[b] && !solid[c]) {
+	                open = true;
+	                break;
+	            }
+	        }
+
+	        openSpace[i] = open;
+	    }
 	}
 
-	public void destroy( int pos ) {
-		Item prize = null;
-		switch (Random.Int(10)) {
-			case 0: prize = new ScrollOfTransmutation();
-				break;
-			case 1: prize = Generator.randomUsingDefaults(Generator.Category.SPELLBOOK);
-				break;
-			default:
-				prize = Generator.randomUsingDefaults(Generator.Category.SCROLL);
-				break;
-		}
-		//if raw tile type is flammable or empty
-		int terr = map[pos];
-		if (terr == Terrain.EMPTY || terr == Terrain.EMPTY_DECO
-				|| (Terrain.flags[map[pos]] & Terrain.FLAMABLE) != 0) {
-			if (terr == Terrain.BOOKSHELF && Random.Float() < (1/20f)*RingOfWealth.dropChanceMultiplier( Dungeon.hero )) {
-				if (prize == null) { //this will never be activated, but this is used to prevent a crash in unpredicted case
-					prize = Generator.randomUsingDefaults(Generator.Category.SCROLL);
-				}
-				Dungeon.level.drop(prize, pos).sprite.drop();
-			} //generates prize for 5% chance when a bookshelf has destroyed
-			set(pos, Terrain.EMBERS);
-		}
-		Blob web = blobs.get(Web.class);
-		if (web != null){
-			web.clear(pos);
-		}
+
+	public void destroy(int pos) {
+
+	    // 책장 파괴 시(또는 일반 소각 시) 드랍될 "prize" 후보를 미리 하나 뽑아둠
+	    Item prize;
+	    switch (Random.Int(10)) {
+	        case 0:
+	            prize = new ScrollOfTransmutation();
+	            break;
+	        case 1:
+	            prize = Generator.randomUsingDefaults(Generator.Category.SPELLBOOK);
+	            break;
+	        default:
+	            prize = Generator.randomUsingDefaults(Generator.Category.SCROLL);
+	            break;
+	    }
+
+	    // 현재 타일 타입(원본 지형)
+	    int terr = map[pos];
+
+	    // "바닥/장식바닥/가연성" 만 태워서 EMBERS로 바꿈
+	    if (terr == Terrain.EMPTY || terr == Terrain.EMPTY_DECO
+	            || (Terrain.flags[terr] & Terrain.FLAMABLE) != 0) {
+
+	        // 책장은 낮은 확률로 추가 드랍 (부의 반지 보정 포함)
+	        if (terr == Terrain.BOOKSHELF
+	                && Random.Float() < (1 / 20f) * RingOfWealth.dropChanceMultiplier(Dungeon.hero)) {
+
+	            // 방어적 코딩(실제로는 prize가 null일 일이 거의 없지만 안전장치)
+	            if (prize == null) {
+	                prize = Generator.randomUsingDefaults(Generator.Category.SCROLL);
+	            }
+
+	            // 드랍 + 드랍 애니메이션
+	            Dungeon.level.drop(prize, pos).sprite.drop();
+	        }
+
+	        // 타일을 잿더미로 변경 (여기서 Level.set()이 호출되므로 set() 안정성이 중요)
+	        set(pos, Terrain.EMBERS);
+	    }
+
+	    // 불로 거미줄 제거
+	    Blob web = blobs.get(Web.class);
+	    if (web != null) {
+	        web.clear(pos);
+	    }
 	}
+
 
 	public void cleanWalls() {
 		if (discoverable == null || discoverable.length != length) {
@@ -987,46 +1083,73 @@ public abstract class Level implements Bundlable {
 		set( cell, terrain, Dungeon.level );
 	}
 	
-	public static void set( int cell, int terrain, Level level ) {
-		Painter.set( level, cell, terrain );
+	public static void set(int cell, int terrain, Level level) {
 
-		if (terrain != Terrain.TRAP && terrain != Terrain.SECRET_TRAP && terrain != Terrain.INACTIVE_TRAP){
-			level.traps.remove( cell );
-		}
+	    // 1) 실제 지형 타일 변경 (map[] 자체를 바꾸는 핵심)
+	    Painter.set(level, cell, terrain);
 
-		int flags = Terrain.flags[terrain];
-		level.passable[cell]		= (flags & Terrain.PASSABLE) != 0;
-		level.losBlocking[cell]	    = (flags & Terrain.LOS_BLOCKING) != 0;
-		level.flamable[cell]		= (flags & Terrain.FLAMABLE) != 0;
-		level.secret[cell]		    = (flags & Terrain.SECRET) != 0;
-		level.solid[cell]			= (flags & Terrain.SOLID) != 0;
-		level.avoid[cell]			= (flags & Terrain.AVOID) != 0;
-		level.pit[cell]			    = (flags & Terrain.PIT) != 0;
-		level.water[cell]			= terrain == Terrain.WATER;
+	    // 2) 트랩 타일이 아니면 해당 칸에 저장된 Trap 오브젝트 제거
+	    if (terrain != Terrain.TRAP && terrain != Terrain.SECRET_TRAP && terrain != Terrain.INACTIVE_TRAP) {
+	        level.traps.remove(cell);
+	    }
 
-		if (level instanceof SewerLevel){
-			if (level.map[cell] == Terrain.REGION_DECO || level.map[cell] == Terrain.REGION_DECO_ALT){
-				level.flamable[cell] = true;
-			}
-		}
+	    // 3) 해당 셀의 flags를 즉시 갱신
+	    int flags = Terrain.flags[terrain];
+	    level.passable[cell]    = (flags & Terrain.PASSABLE) != 0;
+	    level.losBlocking[cell] = (flags & Terrain.LOS_BLOCKING) != 0;
+	    level.flamable[cell]    = (flags & Terrain.FLAMABLE) != 0;
+	    level.secret[cell]      = (flags & Terrain.SECRET) != 0;
+	    level.solid[cell]       = (flags & Terrain.SOLID) != 0;
+	    level.avoid[cell]       = (flags & Terrain.AVOID) != 0;
+	    level.pit[cell]         = (flags & Terrain.PIT) != 0;
+	    level.water[cell]       = terrain == Terrain.WATER;
 
-		for (int i : PathFinder.NEIGHBOURS9){
-			i = cell + i;
-			if (level.solid[i]){
-				level.openSpace[i] = false;
-			} else {
-				for (int j = 1; j < PathFinder.CIRCLE8.length; j += 2){
-					if (level.solid[i+PathFinder.CIRCLE8[j]]) {
-						level.openSpace[i] = false;
-					} else if (!level.solid[i+PathFinder.CIRCLE8[(j+1)%8]]
-							&& !level.solid[i+PathFinder.CIRCLE8[(j+2)%8]]){
-						level.openSpace[i] = true;
-						break;
-					}
-				}
-			}
-		}
+	    // 4) SewerLevel의 REGION_DECO 예외 (원본 유지)
+	    if (level instanceof SewerLevel) {
+	        if (level.map[cell] == Terrain.REGION_DECO || level.map[cell] == Terrain.REGION_DECO_ALT) {
+	            level.flamable[cell] = true;
+	        }
+	    }
+
+	    // 5) 주변 openSpace 갱신 (✅ 인덱스 안전 처리 포함)
+	    for (int off : PathFinder.NEIGHBOURS9) {
+
+	        int i = cell + off;
+
+	        // ✅ 핵심: 범위 밖이면 skip (가장자리/코너 out-of-bounds 방지)
+	        if (i < 0 || i >= level.length()) continue;
+
+	        if (level.solid[i]) {
+	            level.openSpace[i] = false;
+	            continue;
+	        }
+
+	        boolean open = false;
+
+	        for (int j = 1; j < PathFinder.CIRCLE8.length; j += 2) {
+
+	            int a = i + PathFinder.CIRCLE8[j];
+	            int b = i + PathFinder.CIRCLE8[(j + 1) % 8];
+	            int c = i + PathFinder.CIRCLE8[(j + 2) % 8];
+
+	            // ✅ 안전: 범위 체크
+	            if (a < 0 || a >= level.length()
+	                    || b < 0 || b >= level.length()
+	                    || c < 0 || c >= level.length()) {
+	                continue;
+	            }
+
+	            // 코너+축방향 확보로 openSpace 판정
+	            if (!level.solid[a] && !level.solid[b] && !level.solid[c]) {
+	                open = true;
+	                break;
+	            }
+	        }
+
+	        level.openSpace[i] = open;
+	    }
 	}
+
 	
 	public Heap drop( Item item, int cell ) {
 

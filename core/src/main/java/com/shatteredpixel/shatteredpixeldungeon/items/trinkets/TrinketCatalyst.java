@@ -248,9 +248,9 @@ public class TrinketCatalyst extends Item {
 
 			/**
 			 * [후보 생성]
-			 * - 앞의 3개: 서로 다른 트링킷(클래스 기준 중복 제거)
+			 * - 앞의 4개: 서로 다른 트링킷(클래스 기준 중복 제거) 나중에 마지막꺼 랜덤하게 하고 싶으면 NUM_TRINKETS-1 로 교체
 			 */
-			while (cata.rolledTrinkets.size() < NUM_TRINKETS - 1) {
+			while (cata.rolledTrinkets.size() < NUM_TRINKETS) {
 
 				Item rolled = Generator.random(Generator.Category.TRINKET);
 
@@ -273,11 +273,13 @@ public class TrinketCatalyst extends Item {
 			/**
 			 * 4번째는 랜덤 버튼(플레이스홀더)
 			 * - 실제 트링킷이 아니라, confirm 시점에 진짜 트링킷으로 바뀜
+			 * 나중에 랜덤 추가하고 싶으면 아래 부분 살리기
 			 */
+/*			
 			if (cata.rolledTrinkets.size() == NUM_TRINKETS - 1) {
 				cata.rolledTrinkets.add(new RandomTrinket());
 			}
-
+*/
 			/**
 			 * [버튼 생성]
 			 * - 4개 버튼을 가로로 배치

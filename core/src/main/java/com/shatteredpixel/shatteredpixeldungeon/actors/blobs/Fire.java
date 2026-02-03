@@ -38,87 +38,117 @@ public class Fire extends Blob {
 	@Override
 	protected void evolve() {
 
+		// flammable map (Terrain.FLAMABLE 기반으로 buildFlagMaps에서 채워짐)
 		boolean[] flamable = Dungeon.level.flamable;
+
+		// 맵 크기 (height()가 없을 수도 있어서 length/width로 계산)
+		int w = Dungeon.level.width();
+		int h = Dungeon.level.length() / w;
+
 		int cell;
 		int fire;
-		
-		Freezing freeze = (Freezing)Dungeon.level.blobs.get( Freezing.class );
+
+		Freezing freeze = (Freezing) Dungeon.level.blobs.get(Freezing.class);
 
 		boolean observe = false;
 
-		for (int i = area.left-1; i <= area.right; i++) {
-			for (int j = area.top-1; j <= area.bottom; j++) {
-				cell = i + j*Dungeon.level.width();
+		// area는 확장될 수 있고, 원본 로직상 left-1/top-1까지 훑기 때문에 범위를 clamp하는 게 가장 안전
+		int x0 = Math.max(0, area.left - 1);
+		int x1 = Math.min(w - 1, area.right);
+		int y0 = Math.max(0, area.top - 1);
+		int y1 = Math.min(h - 1, area.bottom);
+
+		for (int x = x0; x <= x1; x++) {
+			for (int y = y0; y <= y1; y++) {
+
+				cell = x + y * w;
+
 				if (cur[cell] > 0) {
-					
-					if (freeze != null && freeze.volume > 0 && freeze.cur[cell] > 0){
+
+					// Freezing과 상쇄: 얼음이 있으면 불 제거 + 얼음도 제거
+					if (freeze != null && freeze.volume > 0 && freeze.cur[cell] > 0) {
 						freeze.clear(cell);
 						off[cell] = cur[cell] = 0;
 						continue;
 					}
 
-					burn( cell );
+					// 캐릭터/아이템/식물에 불 효과 적용
+					burn(cell);
 
+					// 불의 세기 감소
 					fire = cur[cell] - 1;
+
+					// 이번 틱에 불이 꺼지는 프레임이고, 해당 타일이 가연성이면 지형 파괴(책장/바리케이드 등)
 					if (fire <= 0 && flamable[cell]) {
-
-						Dungeon.level.destroy( cell );
-
+						Dungeon.level.destroy(cell);
 						observe = true;
-						GameScene.updateMap( cell );
-
+						GameScene.updateMap(cell);
 					}
 
 				} else if (freeze == null || freeze.volume <= 0 || freeze.cur[cell] <= 0) {
 
-					if (flamable[cell]
-							&& (cur[cell-1] > 0
-							|| cur[cell+1] > 0
-							|| cur[cell-Dungeon.level.width()] > 0
-							|| cur[cell+Dungeon.level.width()] > 0)) {
+					// 4방향에 인접한 불이 있는지 확인 (좌우 wrap 방지 + 경계 안전)
+					boolean nearFire =
+							(x > 0       && cur[cell - 1] > 0) ||
+							(x < w - 1   && cur[cell + 1] > 0) ||
+							(y > 0       && cur[cell - w] > 0) ||
+							(y < h - 1   && cur[cell + w] > 0);
+
+					// 가연성 + 인접 불이면 새 불 생성
+					if (flamable[cell] && nearFire) {
 						fire = 4;
-						burn( cell );
-						area.union(i, j);
+						burn(cell);
+						// blob 활성 영역 확장
+						area.union(x, y);
 					} else {
 						fire = 0;
 					}
 
 				} else {
+					// Freezing이 있는 칸에는 불이 생기지 않음
 					fire = 0;
 				}
 
+				// off에 다음 상태 저장 + volume 누적
 				volume += (off[cell] = fire);
 			}
 		}
 
+		// 지형이 바뀌었으면 시야/탐색 갱신
 		if (observe) {
 			Dungeon.observe();
 		}
 	}
-	
-	public static void burn( int pos ) {
-		Char ch = Actor.findChar( pos );
+
+	// 불이 타는 칸에서 발생하는 실제 효과(캐릭터/아이템/식물)
+	public static void burn(int pos) {
+
+		// 캐릭터: Burning 부여/갱신
+		Char ch = Actor.findChar(pos);
 		if (ch != null && !ch.isImmune(Fire.class)) {
-			Buff.affect( ch, Burning.class ).reignite( ch );
+			Buff.affect(ch, Burning.class).reignite(ch);
 		}
-		
-		Heap heap = Dungeon.level.heaps.get( pos );
+
+		// 바닥 아이템 더미: 태우기
+		Heap heap = Dungeon.level.heaps.get(pos);
 		if (heap != null) {
 			heap.burn();
 		}
 
-		Plant plant = Dungeon.level.plants.get( pos );
-		if (plant != null){
+		// 식물: 시들게 처리
+		Plant plant = Dungeon.level.plants.get(pos);
+		if (plant != null) {
 			plant.wither();
 		}
 	}
-	
+
 	@Override
-	public void use( BlobEmitter emitter ) {
-		super.use( emitter );
-		emitter.pour( FlameParticle.FACTORY, 0.03f );
+	public void use(BlobEmitter emitter) {
+		super.use(emitter);
+		// 불 파티클 효과
+		emitter.pour(FlameParticle.FACTORY, 0.03f);
 	}
-	
+
 	@Override
 	public String tileDesc() {
 		return Messages.get(this, "desc");
