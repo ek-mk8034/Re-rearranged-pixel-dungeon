@@ -21,7 +21,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
-
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -31,53 +30,63 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import java.util.ArrayList;
 
 public abstract class Spell extends Item {
-	
+
 	public static final String AC_CAST = "CAST";
 
-	//affects how strongly on-scroll talents trigger from this scroll
+	// affects how strongly on-scroll talents trigger from this scroll
 	protected float talentFactor = 1;
-	//the chance (0-1) of whether on-scroll talents trigger from this potion
+	// the chance (0-1) of whether on-scroll talents trigger from this potion
 	protected float talentChance = 1;
-	
+
+	/**
+	 * ✅ 이번 "시전 1회" 동안 이미 소비/턴 처리(onSpellused)가 되었는지 추적하는 플래그
+	 * - TargetedSpell에서 콜백 끝에 안전망으로 onSpellused를 자동 호출할 때
+	 *   "이미 호출된 스펠"은 중복 소비가 일어나지 않게 막아준다.
+	 */
+	protected boolean spellUsedThisCast = false;
+
 	{
 		stackable = true;
 		defaultAction = AC_CAST;
 	}
-	
+
 	@Override
 	public ArrayList<String> actions(Hero hero ) {
 		ArrayList<String> actions = super.actions( hero );
 		actions.add( AC_CAST );
 		return actions;
 	}
-	
+
 	@Override
 	public void execute( final Hero hero, String action ) {
-		
+
 		super.execute( hero, action );
-		
+
 		if (action.equals( AC_CAST )) {
-			
+
 			if (curUser.buff(MagicImmune.class) != null){
 				GLog.w( Messages.get(this, "no_magic") );
 				return;
 			}
-			
+
+			// ✅ 시전 시작 시점에 "아직 사용 처리 안 됨"으로 초기화
+			spellUsedThisCast = false;
+
 			onCast( hero );
-			
+
 		}
 	}
-	
+
 	@Override
 	public boolean isIdentified() {
 		return true;
 	}
-	
+
 	@Override
 	public boolean isUpgradable() {
 		return false;
 	}
-	
+
 	protected abstract void onCast(Hero hero );
-	
+
 }
